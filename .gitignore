@@ -8,3 +8,7 @@ trading_journal.db
 market_data.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
+
+# Runtime logs
+logs/
+*.log
