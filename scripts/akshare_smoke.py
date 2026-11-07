@@ -2,7 +2,14 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
+import sys
 import time
+
+# Allow direct execution as "python scripts/akshare_smoke.py" from any working directory.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from data.akshare_provider import AkShareProvider
 
