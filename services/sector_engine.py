@@ -42,9 +42,12 @@ def classify_indicators(frame: pd.DataFrame) -> pd.DataFrame:
         return frame.copy()
     out = frame.sort_values(["sector", "date"]).copy()
     initial, reasons = [], []
+    previous_raw_by_sector = {}
     for row in out.itertuples(index=False):
+        previous_raw = previous_raw_by_sector.get(row.sector)
         cold = row.rs5_pct <= -2.0 and row.ret5_pct <= 0 and row.amount_ratio <= 0.9
         retreat_flags = [row.rs3_pct <= -1.0, row.amount_ratio <= 0.8,
+                         previous_raw in ("主升", "补涨") and row.ret3_pct < 0,
                          row.close < row.ma5]
         extreme = row.ret3_pct < -3.0 and row.amount_ratio > 1.5
         if extreme:
@@ -62,6 +65,7 @@ def classify_indicators(frame: pd.DataFrame) -> pd.DataFrame:
             stage, reason = "观察", "未满足主升、补涨、退潮或冷门的完整条件"
         initial.append(stage)
         reasons.append(reason)
+        previous_raw_by_sector[row.sector] = stage
     out["初步阶段"] = initial
     out["判定依据"] = reasons
     final = []
