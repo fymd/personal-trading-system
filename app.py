@@ -452,11 +452,11 @@ def main():
         if any(x is not None for x in (drawdown_report, correlation_report, sector_risk)):
             # Portfolio totals are supplied by the existing portfolio risk page; this
             # standalone snapshot includes the metrics available from uploaded inputs.
-            total_risk = float(sector_positions["risk_amount"].sum()) if sector_positions is not None else 0.0
+            total_risk = float(sector_positions["risk_amount"].sum()) if sector_risk is not None else 0.0
             total_market_value = 0.0
             gross_exposure_pct = 0.0
             total_risk_pct = 0.0
-            if sector_positions is not None:
+            if sector_risk is not None:
                 report_capital = st.number_input(
                     "计算报告风险比例所用账户净值", min_value=1.0,
                     value=1_000_000.0, step=10_000.0, key="analytics_report_capital"
