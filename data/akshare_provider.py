@@ -22,8 +22,14 @@ class AkShareProvider:
         self.retry_attempts = retry_attempts or int(os.getenv('AKSHARE_RETRY_ATTEMPTS', '3'))
 
     def _request(self, operation, action):
+        retryable = (ConnectionError, TimeoutError, OSError)
+        try:
+            import requests
+            retryable = retryable + (requests.exceptions.RequestException,)
+        except ImportError:
+            pass
         return retry_call(operation, action, attempts=self.retry_attempts, logger=logger,
-                          retry_exceptions=(Exception,))
+                          retry_exceptions=retryable)
 
     @staticmethod
     def _rename(frame: pd.DataFrame, mapping: dict[str, str], required: tuple[str, ...]) -> pd.DataFrame:
