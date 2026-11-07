@@ -40,7 +40,7 @@ class AkShareProvider:
 
     def industry_history(self, sector: str, start_date: str, end_date: str) -> pd.DataFrame:
         raw = self.ak.stock_board_industry_hist_em(
-            symbol=sector, period="daily", start_date=start_date, end_date=end_date, adjust=""
+            symbol=sector, period="日k", start_date=start_date, end_date=end_date, adjust=""
         )
         out = self._rename(
             raw,
