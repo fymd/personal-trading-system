@@ -5,7 +5,7 @@ import math
 import pandas as pd
 
 
-def _dated_frame(frame: pd.DataFrame, value_name: str) -> pd.DataFrame:
+def _dated_frame(frame: pd.DataFrame) -> pd.DataFrame:
     if frame is None or frame.empty:
         raise ValueError("历史数据不能为空。")
     if "date" not in frame.columns:
@@ -29,15 +29,17 @@ def analyze_return_correlation(
     """Calculate daily return correlations from a date + one-column-per-symbol price CSV."""
     if not isinstance(min_observations, int) or min_observations < 2:
         raise ValueError("min_observations 至少为 2。")
-    data = _dated_frame(prices, "price")
+    data = _dated_frame(prices)
     symbols = [column for column in data.columns]
     if len(symbols) < 2:
         raise ValueError("价格数据至少需要两个标的列。")
+    if len(set(symbols)) != len(symbols):
+        raise ValueError("标的列名不能重复。")
     for symbol in symbols:
         data[symbol] = pd.to_numeric(data[symbol], errors="coerce")
         values = data[symbol].dropna().to_numpy(dtype=float)
-        if not all(math.isfinite(float(value)) and value > 0 for value in values):
-            raise ValueError(f"{symbol} 价格必须是有限正数。")
+        if len(values) < 2 or not all(math.isfinite(float(value)) and value > 0 for value in values):
+            raise ValueError(f"{symbol} 至少需要两个有效且为有限正数的价格。")
     returns = data.pct_change(fill_method=None)
     correlation = returns.corr(min_periods=min_observations)
     counts = returns.notna().astype(int).T.dot(returns.notna().astype(int))
@@ -57,7 +59,7 @@ def analyze_drawdown(
     """Calculate drawdown against the historical running peak of a NAV series."""
     if not math.isfinite(float(warning_drawdown_pct)) or not 0 < warning_drawdown_pct <= 100:
         raise ValueError("回撤预警阈值必须大于 0 且不超过 100%。")
-    data = _dated_frame(nav_history, "nav")
+    data = _dated_frame(nav_history)
     if "nav" not in data.columns:
         raise ValueError("净值数据必须包含 nav 列。")
     nav = pd.to_numeric(data["nav"], errors="coerce")
