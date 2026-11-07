@@ -455,22 +455,25 @@ def main():
             total_risk = float(sector_positions["risk_amount"].sum()) if sector_positions is not None else 0.0
             total_market_value = 0.0
             gross_exposure_pct = 0.0
-            if sector_positions is not None and "market_value" in sector_positions.columns:
-                market_values = pd.to_numeric(sector_positions["market_value"], errors="coerce")
-                if market_values.isna().any() or (market_values < 0).any() or not all(math.isfinite(float(v)) for v in market_values):
-                    st.error("market_value 必须是有限的非负数。")
-                else:
-                    total_market_value = float(market_values.sum())
-                    report_capital = st.number_input(
-                        "计算报告总仓位所用账户净值", min_value=1.0,
-                        value=1_000_000.0, step=10_000.0, key="analytics_report_capital"
-                    )
-                    gross_exposure_pct = total_market_value / report_capital * 100
+            total_risk_pct = 0.0
+            if sector_positions is not None:
+                report_capital = st.number_input(
+                    "计算报告风险比例所用账户净值", min_value=1.0,
+                    value=1_000_000.0, step=10_000.0, key="analytics_report_capital"
+                )
+                total_risk_pct = total_risk / report_capital * 100
+                if "market_value" in sector_positions.columns:
+                    market_values = pd.to_numeric(sector_positions["market_value"], errors="coerce")
+                    if market_values.isna().any() or (market_values < 0).any() or not all(math.isfinite(float(v)) for v in market_values):
+                        st.error("market_value 必须是有限的非负数。")
+                    else:
+                        total_market_value = float(market_values.sum())
+                        gross_exposure_pct = total_market_value / report_capital * 100
             portfolio_snapshot = {
                 "total_market_value": total_market_value,
                 "gross_exposure_pct": gross_exposure_pct,
                 "total_risk": total_risk,
-                "total_risk_pct": 0.0,
+                "total_risk_pct": total_risk_pct,
                 "alerts": [],
             }
             daily_report = build_daily_risk_report(
