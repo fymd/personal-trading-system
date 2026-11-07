@@ -74,3 +74,46 @@ def test_market_data_rejects_duplicate_dates_and_invalid_prices():
         assert "有限数值" in str(exc)
     else:
         raise AssertionError("Expected non-finite market data validation")
+
+
+def _main_stage_row(sector, day):
+    return {
+        "sector": sector, "ret3_pct": 1.5, "ret5_pct": 3.0,
+        "rs3_pct": 1.2, "rs5_pct": 2.5, "amount_ratio": 1.3,
+        "close": 105.0, "ma5": 100.0, "date": day,
+    }
+
+
+def test_main_stage_confirms_on_adjacent_dataset_sessions():
+    import pandas as pd
+
+    result = app.classify_table(pd.DataFrame([
+        _main_stage_row("半导体", "2026-01-05"),
+        _main_stage_row("半导体", "2026-01-06"),
+    ]))
+    latest = result[result["date"] == pd.Timestamp("2026-01-06")].iloc[0]
+    assert latest["初步阶段"] == "主升"
+    assert latest["最终阶段"] == "主升"
+    assert latest["确认说明"] == "已连续确认/极端信号"
+
+
+def test_main_stage_does_not_confirm_when_sector_skips_a_session():
+    import pandas as pd
+
+    bank = _main_stage_row("银行", "2026-01-06")
+    bank.update({
+        "ret3_pct": 0.1, "ret5_pct": 0.1, "rs3_pct": 0.1,
+        "rs5_pct": 0.1, "amount_ratio": 1.0,
+    })
+    result = app.classify_table(pd.DataFrame([
+        _main_stage_row("半导体", "2026-01-05"),
+        bank,
+        _main_stage_row("半导体", "2026-01-07"),
+    ]))
+    latest = result[
+        (result["sector"] == "半导体")
+        & (result["date"] == pd.Timestamp("2026-01-07"))
+    ].iloc[0]
+    assert latest["初步阶段"] == "主升"
+    assert latest["最终阶段"] == "观察"
+    assert "缺少上一交易日" in latest["确认说明"]
