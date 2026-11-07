@@ -84,28 +84,54 @@ def classify_table(df: pd.DataFrame) -> pd.DataFrame:
     results = out.apply(classify_raw, axis=1, result_type="expand")
     out["初步阶段"] = results[0]
     out["判定依据"] = results[1]
-    # Strict confirmation when a dated history is provided. Same sector's immediately
-    # previous trading row must also satisfy the raw stage; otherwise show provisional.
+    # Use the dates represented in the whole uploaded dataset as the trading-session
+    # calendar. A sector can only confirm against the immediately preceding dataset
+    # session; skipping a session must never count as consecutive confirmation.
     if "date" in out.columns:
         out["date"] = pd.to_datetime(out["date"], errors="coerce")
         out = out.sort_values(["sector", "date"])
+        sessions = sorted(out["date"].drop_duplicates().tolist())
+        previous_session = {
+            current: sessions[index - 1]
+            for index, current in enumerate(sessions)
+            if index > 0
+        }
         final = []
+        confirmations = []
         for _, group in out.groupby("sector", sort=False):
-            prev = None
+            previous_row_date = None
+            previous_raw_stage = None
             for _, row in group.iterrows():
-                stage = row["初步阶段"]
-                if stage == "主升" and prev != "主升":
-                    stage = "观察"
-                elif stage == "退潮" and prev not in ("退潮", "冷门") and "极端放量" not in row["判定依据"]:
-                    stage = "观察"
+                raw_stage = row["初步阶段"]
+                is_consecutive = (
+                    previous_row_date is not None
+                    and previous_session.get(row["date"]) == previous_row_date
+                )
+                confirmed = False
+                stage = raw_stage
+                if raw_stage == "主升":
+                    confirmed = is_consecutive and previous_raw_stage == "主升"
+                    if not confirmed:
+                        stage = "观察"
+                elif raw_stage == "退潮" and "极端放量" not in row["判定依据"]:
+                    confirmed = is_consecutive and previous_raw_stage in ("退潮", "冷门")
+                    if not confirmed:
+                        stage = "观察"
+                else:
+                    confirmed = raw_stage == "退潮" and "极端放量" in row["判定依据"]
                 final.append((row.name, stage))
-                prev = row["初步阶段"]
+                if confirmed:
+                    confirmations.append((row.name, "已连续确认/极端信号"))
+                elif previous_row_date is not None and not is_consecutive:
+                    confirmations.append((row.name, "历史缺少上一交易日数据，重新等待连续确认"))
+                else:
+                    confirmations.append((row.name, "首次触发，待下一交易日确认"))
+                previous_row_date = row["date"]
+                previous_raw_stage = raw_stage
         stage_map = dict(final)
+        confirmation_map = dict(confirmations)
         out["最终阶段"] = out.index.map(stage_map)
-        out["确认说明"] = out.apply(
-            lambda r: "已连续确认/极端信号" if r["最终阶段"] == r["初步阶段"] else "首次触发，待下一交易日确认",
-            axis=1,
-        )
+        out["确认说明"] = out.index.map(confirmation_map)
     else:
         out["最终阶段"] = out["初步阶段"]
         out["确认说明"] = "单日数据：仅为初步判定，无法验证连续两日确认"
