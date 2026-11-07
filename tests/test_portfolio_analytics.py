@@ -37,6 +37,7 @@ def test_drawdown_rejects_invalid_input(rows):
 
 def test_correlation_uses_pairwise_valid_observations_and_flags_high_pairs():
     returns = pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=25),
         "A": [i / 1000 for i in range(25)],
         "B": [i / 500 for i in range(25)],
         "C": [(-1) ** i / 100 for i in range(25)],
@@ -51,6 +52,7 @@ def test_correlation_uses_pairwise_valid_observations_and_flags_high_pairs():
 
 def test_correlation_skips_insufficient_and_constant_series():
     result = analyze_return_correlations(pd.DataFrame({
+        "date": pd.date_range("2024-01-01", periods=4),
         "A": [1, 1, 1, 1], "B": [2, 3, 4, 5], "C": [1, None, None, None]
     }), min_periods=3)
     assert result["pairs"].empty
@@ -58,7 +60,7 @@ def test_correlation_skips_insufficient_and_constant_series():
 
 def test_correlation_rejects_invalid_configuration():
     with pytest.raises(ValueError):
-        analyze_return_correlations(pd.DataFrame({"A": [1], "B": [2]}), min_periods=1)
+        analyze_return_correlations(pd.DataFrame({"date": ["2024-01-01"], "A": [1], "B": [2]}), min_periods=1)
 
 
 def test_sector_risk_contribution_aggregates_and_handles_zero_total():
