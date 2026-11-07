@@ -64,6 +64,9 @@ Windows Task Scheduler：程序指向虚拟环境的 python.exe，参数：
 
 - 每次同步结束后，以沪深300最新交易日作为数据新鲜度基准；默认允许最多 5 个自然日的间隔（覆盖周末及常见短假期），超过阈值或基准数据为空则标记为 stale，并使任务返回非零退出码。
 - 可用 `--max-data-age-days 5` 调整阈值。该检查是保守的日历天数规则，不是完整交易日历；长假期间可按实际情况调整，避免误报。
-- 配置环境变量 `TRADING_ALERT_WEBHOOK_URL` 后，任务遇到部分失败、整体失败或数据过期时会向该 HTTP webhook POST JSON：`{"text":"告警内容" }`。Webhook 未配置时仍写日志并在命令行输出健康状态。
+- 配置环境变量 `TRADING_ALERT_WEBHOOK_URL` 后，任务遇到部分失败、整体失败或数据过期时会向企业微信机器人 Webhook 发送标准文本消息（`msgtype=text`）。程序会检查企业微信返回的 `errcode`，不只检查 HTTP 状态码。Webhook 未配置时仍写日志并在命令行输出健康状态。
 - 如需每次成功后也推送日报，添加 `--alert-on-success`。Webhook 投递失败只记录日志，不覆盖行情同步结果。
 - 示例（Linux/macOS）：`export TRADING_ALERT_WEBHOOK_URL="https://your-webhook-endpoint"`；Windows PowerShell：`$env:TRADING_ALERT_WEBHOOK_URL="https://your-webhook-endpoint"`。请将真实地址放在运行环境变量或密钥管理中，不要提交到 Git。
+
+- GitHub Actions 使用时，请在仓库 **Settings → Secrets and variables → Actions → New repository secret** 新建 `TRADING_ALERT_WEBHOOK_URL`，值填入重置后企业微信机器人的完整 Webhook URL；不要把 URL 写进仓库文件、Workflow 明文或提交记录。
+- 本地运行时，可在操作系统环境变量或本地未跟踪的 `.env`/启动脚本中设置该变量；不要提交密钥。
