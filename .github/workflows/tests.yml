@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - feature/trading-dashboard-mvp
+      - integration/akshare-on-dashboard
   pull_request:
     branches:
       - main
+      - feature/**
+      - fix/**
+      - integration/**
 
 jobs:
   tests:

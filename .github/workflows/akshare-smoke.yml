@@ -1,0 +1,27 @@
+name: AKShare live smoke test
+
+on:
+  push:
+    branches:
+      - integration/akshare-on-dashboard
+    paths:
+      - "data/akshare_provider.py"
+      - "scripts/akshare_smoke.py"
+      - ".github/workflows/akshare-smoke.yml"
+      - "requirements.txt"
+  workflow_dispatch:
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - name: Check live AKShare endpoints
+        run: python scripts/akshare_smoke.py
