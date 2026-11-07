@@ -1,20 +1,29 @@
 """AKShare adapter: normalize provider-specific frames into stable internal schemas."""
 from __future__ import annotations
 
-from datetime import date
-from typing import Callable
+import logging
+import os
 
 import pandas as pd
 
+from services.reliability import retry_call
+
+logger = logging.getLogger(__name__)
+
 
 class AkShareProvider:
-    def __init__(self, ak_module=None):
+    def __init__(self, ak_module=None, retry_attempts: int | None = None):
         if ak_module is None:
             try:
                 import akshare as ak_module
             except ImportError as exc:
                 raise RuntimeError("AKShare 未安装，请先执行 pip install -r requirements.txt") from exc
         self.ak = ak_module
+        self.retry_attempts = retry_attempts or int(os.getenv('AKSHARE_RETRY_ATTEMPTS', '3'))
+
+    def _request(self, operation, action):
+        return retry_call(operation, action, attempts=self.retry_attempts, logger=logger,
+                          retry_exceptions=(ConnectionError, TimeoutError, OSError, RuntimeError))
 
     @staticmethod
     def _rename(frame: pd.DataFrame, mapping: dict[str, str], required: tuple[str, ...]) -> pd.DataFrame:
@@ -27,7 +36,7 @@ class AkShareProvider:
         return out
 
     def industry_list(self) -> pd.DataFrame:
-        raw = self.ak.stock_board_industry_name_em()
+        raw = self._request('AKShare industry list', self.ak.stock_board_industry_name_em)
         out = self._rename(
             raw,
             {"板块名称": "sector", "板块代码": "sector_code", "代码": "sector_code",
@@ -41,8 +50,12 @@ class AkShareProvider:
         return out.reset_index(drop=True)
 
     def industry_history(self, sector: str, start_date: str, end_date: str) -> pd.DataFrame:
-        raw = self.ak.stock_board_industry_hist_em(
-            symbol=sector, period="日k", start_date=start_date, end_date=end_date, adjust=""
+        raw = self._request(
+            f"AKShare industry history: {sector}",
+            lambda: self.ak.stock_board_industry_hist_em(
+                symbol=sector, period="日k", start_date=start_date,
+                end_date=end_date, adjust=""
+            ),
         )
         out = self._rename(
             raw,
@@ -56,8 +69,11 @@ class AkShareProvider:
         return self._clean_history(out)
 
     def benchmark_history(self, start_date: str, end_date: str, symbol: str = "csi000300") -> pd.DataFrame:
-        raw = self.ak.stock_zh_index_daily_em(
-            symbol=symbol, start_date=start_date, end_date=end_date
+        raw = self._request(
+            f"AKShare benchmark history: {symbol}",
+            lambda: self.ak.stock_zh_index_daily_em(
+                symbol=symbol, start_date=start_date, end_date=end_date
+            ),
         )
         out = self._rename(
             raw,
