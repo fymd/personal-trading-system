@@ -49,4 +49,13 @@ Windows Task Scheduler：程序指向虚拟环境的 python.exe，参数：
 ```cron
 10 16 * * 1-5 cd /path/to/personal-trading-system && .venv/bin/python -m services.daily_job --db market_data.sqlite3 --lookback-days 30
 ```
-节假日和数据源空结果需在任务日志中核查；生产使用前建议增加交易日历、告警与失败重试。
+节假日和数据源空结果需在任务日志中核查；当前版本已提供上游请求指数退避重试、逐行业异常隔离、结构化日志和日志轮转；生产环境仍建议接入交易日历与外部告警。
+
+## 失败重试与日志监控
+
+- AKShare 每个上游请求默认最多尝试 3 次，采用指数退避（约 1、2 秒起步）和随机抖动；仅在请求层重试，字段校验/指标计算错误不会被当作网络故障反复重试。
+- 可通过环境变量 `AKSHARE_RETRY_ATTEMPTS` 调整最大尝试次数，通过 `TRADING_LOG_LEVEL` 调整日志级别（默认 INFO）。
+- 每次行业同步单独隔离；失败行业记录名称、异常堆栈和耗时，其余行业继续执行。整体状态为 `success`、`partial` 或 `failed`。
+- CLI 默认同时输出控制台日志，并在 `logs/market_sync.jsonl` 写入 UTF-8 JSON Lines 日志；单文件达到 5 MB 后轮转，保留 5 个备份。日志目录可通过 `--log-dir` 修改。
+- 任务非完整成功时返回非零退出码。建议计划任务按退出码告警，并定期检查 SQLite `sync_runs` 表中的状态和错误摘要。
+- 示例：`python -m services.daily_job --db market_data.sqlite3 --lookback-days 90 --log-dir logs`
