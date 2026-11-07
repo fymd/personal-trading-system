@@ -1,6 +1,9 @@
+from datetime import date
+
 import pandas as pd
 
 from data.market_store import MarketStore
+from services.market_sync import MarketSync
 from services.sector_engine import calculate_indicators, classify_indicators
 
 
@@ -76,3 +79,37 @@ def test_classification_marks_first_main_stage_as_observation():
     out = classify_indicators(rows)
     assert out["初步阶段"].tolist() == ["主升", "主升"]
     assert out["最终阶段"].tolist() == ["观察", "主升"]
+
+
+
+def test_market_sync_fails_sector_when_latest_benchmark_session_is_missing(tmp_path):
+    dates = pd.bdate_range("2026-01-01", periods=15).strftime("%Y-%m-%d")
+    benchmark = pd.DataFrame({"date": dates, "close": [100.0 + i for i in range(15)]})
+    sector_history = pd.DataFrame({
+        "date": dates[:-1],
+        "close": [50.0 + i for i in range(14)],
+        "amount": [1000.0] * 14,
+    })
+
+    class Provider:
+        def industry_list(self):
+            return pd.DataFrame({"sector": ["测试行业"]})
+
+        def benchmark_history(self, start_date, end_date, symbol):
+            return benchmark
+
+        def industry_history(self, sector, start_date, end_date):
+            return sector_history
+
+    store = MarketStore(tmp_path / "market.sqlite3")
+    sync = MarketSync(
+        provider=Provider(), store=store, today=lambda: date.fromisoformat(dates[-1])
+    )
+    result = sync.run(lookback_days=90)
+
+    assert result["status"] == "failed"
+    assert result["sectors_ok"] == 0
+    assert result["sectors_failed"] == 1
+    assert "最新基准交易日" in result["errors"][0]
+    latest = store.latest_indicators()
+    assert latest.iloc[0]["final_stage"] == "数据缺失"
