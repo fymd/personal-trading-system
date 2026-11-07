@@ -64,6 +64,9 @@ def test_webhook_sends_json_payload_when_configured(monkeypatch):
         def __exit__(self, *args):
             return False
 
+        def read(self):
+            return b'{"errcode":0,"errmsg":"ok"}'
+
     def fake_urlopen(request, timeout):
         captured["url"] = request.full_url
         captured["body"] = json.loads(request.data.decode("utf-8"))
@@ -73,7 +76,10 @@ def test_webhook_sends_json_payload_when_configured(monkeypatch):
     monkeypatch.setattr(monitoring, "urlopen", fake_urlopen)
     assert monitoring.send_webhook_alert("test alert", url="https://example.invalid/hook")
     assert captured["url"] == "https://example.invalid/hook"
-    assert captured["body"] == {"text": "test alert"}
+    assert captured["body"] == {
+        "msgtype": "text",
+        "text": {"content": "test alert"},
+    }
     assert captured["timeout"] == 8.0
 
 
@@ -82,3 +88,23 @@ def test_webhook_without_configuration_is_not_sent(monkeypatch):
 
     monkeypatch.delenv("TRADING_ALERT_WEBHOOK_URL", raising=False)
     assert monitoring.send_webhook_alert("test alert") is False
+
+
+
+def test_wecom_webhook_api_error_is_reported(monkeypatch):
+    from services import monitoring
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return b'{"errcode":93000,"errmsg":"invalid webhook"}'
+
+    monkeypatch.setattr(monitoring, "urlopen", lambda request, timeout: FakeResponse())
+    assert monitoring.send_webhook_alert("test alert", url="https://example.invalid/hook") is False
