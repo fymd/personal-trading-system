@@ -49,10 +49,17 @@ class MarketSync:
                     all_history = self.store.load_sector_history(sector)
                     base_history = self.store.load_benchmark_history(self.benchmark_symbol)
                     indicators = calculate_indicators(all_history, base_history, sector)
-                    if indicators.empty:
-                        raise ValueError("有效重叠行情不足以计算指标（至少需要 11 个交易日）")
+                    if indicators.empty or indicators.dropna(
+                        subset=["ret3_pct", "ret5_pct", "rs3_pct", "rs5_pct", "ma5", "amount_ratio"]
+                    ).empty:
+                        raise ValueError("有效重叠行情不足以计算指标（至少需要 10 个连续有效交易日）")
                     classified = classify_indicators(indicators)
                     self.store.save_indicators(classified)
+                    latest = classified.iloc[-1]
+                    if latest["最终阶段"] == "数据缺失":
+                        raise ValueError(
+                            f"最新基准交易日 {latest['date']} 缺少有效板块行情或指标窗口不完整"
+                        )
                     ok += 1
                     logger.info('Sector synchronized', extra={'sector': sector, 'status': 'success', 'elapsed_ms': round((time.monotonic() - sector_started) * 1000)})
                 except Exception as exc:
