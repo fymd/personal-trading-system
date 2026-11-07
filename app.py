@@ -57,13 +57,29 @@ def classify_raw(row):
 
 
 def classify_table(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
     out = df.copy()
+    out["sector"] = out["sector"].astype("string").str.strip()
+    if out["sector"].isna().any() or out["sector"].eq("").any():
+        raise ValueError("板块名称不能为空。")
     for c in REQUIRED[1:]:
         out[c] = pd.to_numeric(out[c], errors="coerce")
     if out[REQUIRED].isna().any().any():
         raise ValueError("行情表存在空值或非数字字段，请检查必填列。")
+    numeric = out[REQUIRED[1:]].to_numpy(dtype=float)
+    if not pd.notna(numeric).all() or not __import__("numpy").isfinite(numeric).all():
+        raise ValueError("行情指标必须为有限数值，不能包含无穷大。")
     if (out["amount_ratio"] < 0).any():
         raise ValueError("成交额变化倍数不能为负数。")
+    if (out[["close", "ma5"]] <= 0).any().any():
+        raise ValueError("收盘价和 MA5 必须大于 0。")
+    if "date" in out.columns:
+        out["date"] = pd.to_datetime(out["date"], errors="coerce")
+        if out["date"].isna().any():
+            raise ValueError("日期列包含无效日期。")
+        if out.duplicated(["sector", "date"]).any():
+            raise ValueError("同一板块存在重复交易日期，请先去重。")
     results = out.apply(classify_raw, axis=1, result_type="expand")
     out["初步阶段"] = results[0]
     out["判定依据"] = results[1]
@@ -95,15 +111,30 @@ def classify_table(df: pd.DataFrame) -> pd.DataFrame:
     return out.sort_values("sector").reset_index(drop=True)
 
 
-def calc_position(capital, risk_pct, entry, stop, cost_pct, multiplier, max_exposure_pct):
-    if min(capital, risk_pct, entry, stop) <= 0:
-        raise ValueError("资金、风险比例、入场价和止损价必须大于 0。")
-    if entry == stop:
-        raise ValueError("入场价不能等于止损价。")
-    per_unit = abs(entry - stop) + entry * max(cost_pct, 0) / 100
+def calc_position(capital, risk_pct, entry, stop, cost_pct, multiplier, max_exposure_pct, side="多"):
+    values = [capital, risk_pct, entry, stop, cost_pct, multiplier, max_exposure_pct]
+    if not all(__import__("math").isfinite(float(v)) for v in values):
+        raise ValueError("所有仓位参数必须为有限数值。")
+    if capital <= 0 or entry <= 0 or stop <= 0:
+        raise ValueError("资金、入场价和止损价必须大于 0。")
+    if not 0 < risk_pct <= 100:
+        raise ValueError("单笔风险比例必须大于 0 且不超过 100%。")
+    if cost_pct < 0:
+        raise ValueError("交易成本比例不能为负数。")
+    if not 0 <= multiplier <= 1:
+        raise ValueError("仓位调整系数必须在 0 到 1 之间。")
+    if not 0 < max_exposure_pct <= 100:
+        raise ValueError("单标的资金占比上限必须在 0 到 100% 之间。")
+    if side not in ("多", "空"):
+        raise ValueError("交易方向必须为多或空。")
+    if side == "多" and stop >= entry:
+        raise ValueError("多头止损价必须低于入场价。")
+    if side == "空" and stop <= entry:
+        raise ValueError("空头止损价必须高于入场价。")
+    per_unit = abs(entry - stop) + entry * cost_pct / 100
     risk_budget = capital * risk_pct / 100
     raw_qty = int(risk_budget / per_unit)
-    qty = int(raw_qty * max(0, multiplier))
+    qty = int(raw_qty * multiplier)
     max_qty = int(capital * max_exposure_pct / 100 / entry)
     qty = min(qty, max_qty)
     invested = qty * entry
@@ -224,13 +255,14 @@ def main():
         entry = c4.number_input("计划入场价", min_value=0.01, value=50.0, step=0.1)
         stop = c5.number_input("止损价", min_value=0.001, value=47.0, step=0.1)
         cost = c6.number_input("往返成本估计 %（含滑点）", min_value=0.0, value=0.2, step=0.05)
+        side = st.selectbox("交易方向", ["多", "空"])
         stage = st.selectbox("板块阶段", STAGES, index=0)
         confidence = st.selectbox("模型信心系数", ["高（1.0）", "中（0.7）", "低（0.4）"])
         confidence_mult = {"高（1.0）": 1.0, "中（0.7）": 0.7, "低（0.4）": 0.4}[confidence]
         external_mult = st.selectbox("外部市场调整系数", [1.0, 0.7, 0.5], format_func=lambda x: str(x))
         mult = STAGE_MULTIPLIER[stage] * confidence_mult * external_mult
         try:
-            result = calc_position(capital, risk_pct, entry, stop, cost, mult, exposure)
+            result = calc_position(capital, risk_pct, entry, stop, cost, mult, exposure, side)
             k1, k2, k3, k4 = st.columns(4)
             k1.metric("建议数量（股/份）", f"{result['quantity']:,}")
             k2.metric("预计投入资金", f"{result['invested']:,.2f}")
@@ -260,8 +292,9 @@ def main():
             notes = st.text_area("交易理由 / 复盘")
             submitted = st.form_submit_button("保存交易")
             if submitted:
-                if not symbol.strip() or entry == stop:
-                    st.error("请填写标的，且入场价不能等于止损价。")
+                invalid_stop = (side == "多" and stop >= entry) or (side == "空" and stop <= entry)
+                if not symbol.strip() or invalid_stop:
+                    st.error("请填写标的，并确保多头止损低于入场价、空头止损高于入场价。")
                 else:
                     with db() as conn:
                         conn.execute("""INSERT INTO trades
