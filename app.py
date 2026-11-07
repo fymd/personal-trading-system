@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import math
 from pathlib import Path
 from datetime import date
 import pandas as pd
@@ -68,7 +69,7 @@ def classify_table(df: pd.DataFrame) -> pd.DataFrame:
     if out[REQUIRED].isna().any().any():
         raise ValueError("行情表存在空值或非数字字段，请检查必填列。")
     numeric = out[REQUIRED[1:]].to_numpy(dtype=float)
-    if not pd.notna(numeric).all() or not __import__("numpy").isfinite(numeric).all():
+    if not pd.notna(numeric).all() or not math.isfinite(float(v)) for v in numeric.flat:
         raise ValueError("行情指标必须为有限数值，不能包含无穷大。")
     if (out["amount_ratio"] < 0).any():
         raise ValueError("成交额变化倍数不能为负数。")
@@ -113,7 +114,7 @@ def classify_table(df: pd.DataFrame) -> pd.DataFrame:
 
 def calc_position(capital, risk_pct, entry, stop, cost_pct, multiplier, max_exposure_pct, side="多"):
     values = [capital, risk_pct, entry, stop, cost_pct, multiplier, max_exposure_pct]
-    if not all(__import__("math").isfinite(float(v)) for v in values):
+    if not all(math.isfinite(float(v)) for v in values):
         raise ValueError("所有仓位参数必须为有限数值。")
     if capital <= 0 or entry <= 0 or stop <= 0:
         raise ValueError("资金、入场价和止损价必须大于 0。")
