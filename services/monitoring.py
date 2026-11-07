@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import date, datetime
+from datetime import date
 from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
@@ -30,19 +30,26 @@ def check_data_freshness(store, benchmark_symbol: str, *, today: date | None = N
 
 def send_webhook_alert(message: str, *, url: str | None = None,
                        timeout: float = 8.0) -> bool:
-    """Send a generic JSON text payload to a configured webhook endpoint."""
+    """Send a text alert using the WeCom group-bot webhook payload format."""
     endpoint = url or os.getenv("TRADING_ALERT_WEBHOOK_URL")
     if not endpoint:
         logger.info("Alert webhook not configured; alert remains in job output")
         return False
-    payload = json.dumps({"text": message}, ensure_ascii=False).encode("utf-8")
+    payload = json.dumps({"msgtype": "text", "text": {"content": message}}, ensure_ascii=False).encode("utf-8")
     request = Request(endpoint, data=payload,
                       headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urlopen(request, timeout=timeout) as response:
             if not 200 <= response.status < 300:
                 raise RuntimeError(f"Webhook returned HTTP {response.status}")
-        logger.info("Alert webhook delivered")
+            body = response.read()
+        result = json.loads(body.decode("utf-8")) if body else {}
+        if result.get("errcode", 0) != 0:
+            raise RuntimeError(
+                f"WeCom webhook rejected alert: errcode={result.get('errcode')}, "
+                f"errmsg={result.get('errmsg', 'unknown')}"
+            )
+        logger.info("WeCom alert webhook delivered")
         return True
     except Exception:
         logger.exception("Alert webhook delivery failed")
