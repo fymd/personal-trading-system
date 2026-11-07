@@ -21,7 +21,7 @@ def main():
     result = MarketSync(store=store, benchmark_symbol=args.benchmark).run(args.lookback_days)
     print(json.dumps({k: v for k, v in result.items() if k != "indicators"},
                      ensure_ascii=False, indent=2))
-    if result["status"] == "failed":
+    if result["status"] != "success":
         raise SystemExit(1)
 
 
