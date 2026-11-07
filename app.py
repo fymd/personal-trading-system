@@ -69,7 +69,7 @@ def classify_table(df: pd.DataFrame) -> pd.DataFrame:
     if out[REQUIRED].isna().any().any():
         raise ValueError("行情表存在空值或非数字字段，请检查必填列。")
     numeric = out[REQUIRED[1:]].to_numpy(dtype=float)
-    if not pd.notna(numeric).all() or not math.isfinite(float(v)) for v in numeric.flat:
+    if not all(math.isfinite(float(v)) for v in numeric.flat):
         raise ValueError("行情指标必须为有限数值，不能包含无穷大。")
     if (out["amount_ratio"] < 0).any():
         raise ValueError("成交额变化倍数不能为负数。")
