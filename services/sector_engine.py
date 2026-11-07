@@ -12,15 +12,27 @@ def calculate_indicators(sector_history: pd.DataFrame, benchmark_history: pd.Dat
                          sector: str) -> pd.DataFrame:
     if sector_history.empty or benchmark_history.empty:
         return pd.DataFrame()
-    s = sector_history.copy().sort_values("date")
-    b = benchmark_history[["date", "close"]].copy().sort_values("date")
-    s["date"] = pd.to_datetime(s["date"]).dt.strftime("%Y-%m-%d")
-    b["date"] = pd.to_datetime(b["date"]).dt.strftime("%Y-%m-%d")
-    merged = s.merge(b.rename(columns={"close": "benchmark_close"}), on="date", how="inner")
+
+    s = sector_history.copy()
+    b = benchmark_history[["date", "close"]].copy()
+    s["date"] = pd.to_datetime(s["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    b["date"] = pd.to_datetime(b["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    s = s.dropna(subset=["date"])
+    b = b.dropna(subset=["date"])
+    s = s.sort_values("date")
+    b = b.sort_values("date")
+
+    # Use the benchmark trading calendar as the canonical session sequence. An inner
+    # join would silently remove missing sector sessions and make shift(3)/rolling(10)
+    # span more than 3/10 actual market sessions.
+    merged = b.rename(columns={"close": "benchmark_close"}).merge(
+        s, on="date", how="left", validate="one_to_one"
+    )
     for col in ("close", "amount", "benchmark_close"):
         merged[col] = pd.to_numeric(merged[col], errors="coerce")
-    merged = merged.dropna(subset=["close", "benchmark_close"]).copy()
-    merged = merged[(merged["close"] > 0) & (merged["benchmark_close"] > 0)]
+    merged.loc[merged["close"] <= 0, "close"] = float("nan")
+    merged.loc[merged["benchmark_close"] <= 0, "benchmark_close"] = float("nan")
+
     merged["ret3_pct"] = _pct_change(merged["close"], 3)
     merged["ret5_pct"] = _pct_change(merged["close"], 5)
     merged["benchmark_ret3_pct"] = _pct_change(merged["benchmark_close"], 3)
@@ -32,8 +44,8 @@ def calculate_indicators(sector_history: pd.DataFrame, benchmark_history: pd.Dat
     amount10 = merged["amount"].rolling(10, min_periods=10).mean()
     merged["amount_ratio"] = amount3 / amount10.where(amount10 > 0)
     merged["sector"] = sector
-    return merged.dropna(subset=["ret3_pct", "ret5_pct", "rs3_pct", "rs5_pct",
-                                  "ma5", "amount_ratio"]).reset_index(drop=True)
+    return merged.dropna(subset=["close", "benchmark_close", "ret3_pct", "ret5_pct",
+                                  "rs3_pct", "rs5_pct", "ma5", "amount_ratio"]).reset_index(drop=True)
 
 
 def classify_indicators(frame: pd.DataFrame) -> pd.DataFrame:
