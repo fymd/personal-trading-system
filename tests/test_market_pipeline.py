@@ -1,4 +1,3 @@
-import sqlite3
 import pandas as pd
 
 from data.market_store import MarketStore
@@ -25,6 +24,24 @@ def test_indicators_align_on_common_trading_dates():
     assert result.iloc[-1]["ret3_pct"] > result.iloc[-1]["benchmark_ret3_pct"]
     assert result.iloc[-1]["rs3_pct"] > 0
     assert result.iloc[-1]["amount_ratio"] == 1.0
+
+
+def test_missing_sector_session_does_not_compress_trading_day_windows():
+    dates = pd.bdate_range("2026-01-01", periods=35).strftime("%Y-%m-%d")
+    closes = [100.0 + i for i in range(35)]
+    sector = pd.DataFrame({"date": dates, "close": closes, "amount": [1000.0] * 35})
+    benchmark = pd.DataFrame({"date": dates, "close": [100.0 + i * 0.5 for i in range(35)]})
+
+    # Drop a sector bar near the end. The benchmark calendar must retain this session
+    # so the next valid 3-session return is never calculated across a 4-session gap.
+    sector = sector.drop(index=22).reset_index(drop=True)
+    result = calculate_indicators(sector, benchmark, "测试行业")
+
+    latest = result.iloc[-1]
+    expected_ret3 = (closes[34] / closes[31] - 1.0) * 100.0
+    assert latest["date"] == dates[34]
+    assert latest["ret3_pct"] == expected_ret3
+    assert len(result) < 35 - 10
 
 
 def test_classification_marks_first_main_stage_as_observation():
