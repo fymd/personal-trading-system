@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import sqlite3
+import json
 import math
 from pathlib import Path
 from datetime import date
 import pandas as pd
 import streamlit as st
 from services.portfolio_risk import analyze_portfolio
+from services.portfolio_analytics import (
+    analyze_drawdown, analyze_return_correlations,
+    analyze_sector_risk_contribution, build_daily_risk_report,
+)
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "trading_journal.db"
@@ -188,7 +193,7 @@ def main():
 
     with st.sidebar:
         st.header("工作区")
-        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "组合风险管理", "交易日志", "数据格式说明"])
+        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "组合风险管理", "组合风险进阶", "交易日志", "数据格式说明"])
         st.divider()
         st.caption("数据默认保存在本机 SQLite；行情需由你导入或填写。")
 
@@ -372,6 +377,121 @@ def main():
                 )
             except Exception as exc:
                 st.error(f"组合风险计算失败：{exc}")
+
+    elif page == "组合风险进阶":
+        st.subheader("组合风险进阶分析")
+        st.caption("上传账户每日净值与标的日收益率；相关性计算使用收益率，不可直接上传价格序列。")
+        equity_upload = st.file_uploader(
+            "账户净值历史 CSV（date,equity）", type=["csv"], key="equity_curve_upload"
+        )
+        returns_upload = st.file_uploader(
+            "标的日收益率 CSV（date + 每个标的代码列）",
+            type=["csv"], key="returns_matrix_upload"
+        )
+        positions_upload = st.file_uploader(
+            "持仓风险 CSV（sector,risk_amount；可选 market_value）",
+            type=["csv"], key="sector_risk_upload"
+        )
+        drawdown_report = correlation_report = sector_risk = None
+        sector_positions = None
+        left, right = st.columns(2)
+        if equity_upload is not None:
+            try:
+                equity_data = pd.read_csv(equity_upload)
+                drawdown_report = analyze_drawdown(equity_data)
+                with left:
+                    st.markdown("**账户回撤监控**")
+                    m1, m2 = st.columns(2)
+                    m1.metric("历史最大回撤", "{:.2f}%".format(drawdown_report["max_drawdown_pct"]))
+                    m2.metric("当前回撤", "{:.2f}%".format(drawdown_report["current_drawdown_pct"]))
+                    st.caption(
+                        "峰值日期：{}；谷值日期：{}".format(
+                            drawdown_report["peak_date"], drawdown_report["trough_date"]
+                        )
+                    )
+                    st.line_chart(
+                        drawdown_report["curve"].set_index("date")["drawdown_pct"],
+                        y_label="回撤（%）"
+                    )
+            except Exception as exc:
+                st.error("净值曲线分析失败：{}".format(exc))
+        if returns_upload is not None:
+            try:
+                returns_data = pd.read_csv(returns_upload)
+                min_obs = st.number_input(
+                    "相关性最少有效样本数", min_value=2, max_value=500,
+                    value=20, step=1, key="corr_min_obs"
+                )
+                threshold = st.slider(
+                    "高相关性告警阈值", min_value=0.0, max_value=1.0,
+                    value=0.8, step=0.05, key="corr_threshold"
+                )
+                correlation_report = analyze_return_correlations(
+                    returns_data, min_periods=min_obs, warning_threshold=threshold
+                )
+                with right:
+                    st.markdown("**标的收益率相关性**")
+                    st.dataframe(correlation_report["correlation"], use_container_width=True)
+                    st.dataframe(correlation_report["pairs"], use_container_width=True, hide_index=True)
+                    for warning in correlation_report["warnings"]:
+                        st.warning(warning)
+                    if not correlation_report["warnings"]:
+                        st.success("在有效样本范围内，未发现超过阈值的正相关标的对。")
+            except Exception as exc:
+                st.error("相关性分析失败：{}".format(exc))
+        if positions_upload is not None:
+            try:
+                sector_positions = pd.read_csv(positions_upload)
+                sector_risk = analyze_sector_risk_contribution(sector_positions)
+                st.markdown("**行业止损风险贡献**")
+                st.dataframe(sector_risk, use_container_width=True, hide_index=True)
+                if not sector_risk.empty and sector_risk.iloc[0]["risk_contribution_pct"] >= 50:
+                    st.warning("最大行业风险贡献达到或超过组合止损风险的 50%，请检查行业风险联动。")
+            except Exception as exc:
+                st.error("行业风险贡献分析失败：{}".format(exc))
+        if any(x is not None for x in (drawdown_report, correlation_report, sector_risk)):
+            # Portfolio totals are supplied by the existing portfolio risk page; this
+            # standalone snapshot includes the metrics available from uploaded inputs.
+            total_risk = float(sector_positions["risk_amount"].sum()) if sector_risk is not None else 0.0
+            total_market_value = 0.0
+            gross_exposure_pct = 0.0
+            total_risk_pct = 0.0
+            if sector_risk is not None:
+                report_capital = st.number_input(
+                    "计算报告风险比例所用账户净值", min_value=1.0,
+                    value=1_000_000.0, step=10_000.0, key="analytics_report_capital"
+                )
+                total_risk_pct = total_risk / report_capital * 100
+                if "market_value" in sector_positions.columns:
+                    market_values = pd.to_numeric(sector_positions["market_value"], errors="coerce")
+                    if market_values.isna().any() or (market_values < 0).any() or not all(math.isfinite(float(v)) for v in market_values):
+                        st.error("market_value 必须是有限的非负数。")
+                    else:
+                        total_market_value = float(market_values.sum())
+                        gross_exposure_pct = total_market_value / report_capital * 100
+            portfolio_snapshot = {
+                "total_market_value": total_market_value,
+                "gross_exposure_pct": gross_exposure_pct,
+                "total_risk": total_risk,
+                "total_risk_pct": total_risk_pct,
+                "alerts": [],
+            }
+            daily_report = build_daily_risk_report(
+                portfolio_snapshot, drawdown_report, correlation_report,
+                sector_risk=sector_risk
+            )
+            st.markdown("**每日收盘风险快照**")
+            st.json(daily_report)
+            st.download_button(
+                "下载每日风险报告 JSON",
+                json.dumps(daily_report, ensure_ascii=False, indent=2).encode("utf-8"),
+                "daily_portfolio_risk_report.json", "application/json"
+            )
+        st.info(
+            "说明：回撤基于上传的账户净值序列；相关性基于日收益率并采用成对有效样本。"
+            "持仓 CSV 如包含 market_value，可计算总市值与总仓位；止损风险占净值比例仍需结合账户净值人工核对。"
+            "本页不自动抓取行情，也不代表未来相关性或风险水平。"
+        )
 
     elif page == "交易日志":
         st.subheader("交易记录")
