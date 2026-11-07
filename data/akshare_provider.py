@@ -23,7 +23,7 @@ class AkShareProvider:
 
     def _request(self, operation, action):
         return retry_call(operation, action, attempts=self.retry_attempts, logger=logger,
-                          retry_exceptions=(ConnectionError, TimeoutError, OSError, RuntimeError))
+                          retry_exceptions=(Exception,))
 
     @staticmethod
     def _rename(frame: pd.DataFrame, mapping: dict[str, str], required: tuple[str, ...]) -> pd.DataFrame:
