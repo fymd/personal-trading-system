@@ -3,12 +3,16 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from typing import Callable
+import logging
+import time
 
 import pandas as pd
 
 from data.akshare_provider import AkShareProvider
 from data.market_store import MarketStore
 from services.sector_engine import calculate_indicators, classify_indicators
+
+logger = logging.getLogger(__name__)
 
 
 class MarketSync:
@@ -24,6 +28,7 @@ class MarketSync:
         start = end - timedelta(days=lookback_days)
         start_text, end_text = start.strftime("%Y%m%d"), end.strftime("%Y%m%d")
         started = datetime.now().isoformat(timespec="seconds")
+        logger.info('Market sync started', extra={'status': 'running'})
         sectors = self.provider.industry_list()
         if sectors.empty or "sector" not in sectors.columns:
             raise ValueError("AKShare 未返回有效行业板块列表，停止分析以避免生成空结果")
@@ -35,6 +40,7 @@ class MarketSync:
                 raise ValueError("沪深300基准行情不足 11 个交易日，无法计算 10 日成交额均值")
             self.store.upsert_benchmark(self.benchmark_symbol, benchmark)
             for sector in sectors["sector"].tolist():
+                sector_started = time.monotonic()
                 try:
                     history = self.provider.industry_history(sector, start_text, end_text)
                     if history.empty:
@@ -48,16 +54,20 @@ class MarketSync:
                     classified = classify_indicators(indicators)
                     self.store.save_indicators(classified)
                     ok += 1
+                    logger.info('Sector synchronized', extra={'sector': sector, 'status': 'success', 'elapsed_ms': round((time.monotonic() - sector_started) * 1000)})
                 except Exception as exc:
                     errors.append(f"{sector}: {type(exc).__name__}: {exc}")
+                    logger.exception('Sector synchronization failed', extra={'sector': sector, 'status': 'failed', 'elapsed_ms': round((time.monotonic() - sector_started) * 1000)})
             failed = len(errors)
             status = "success" if failed == 0 else ("partial" if ok else "failed")
             self.store.finish_run(run_id, datetime.now().isoformat(timespec="seconds"),
                                   status, ok, failed, errors)
+            logger.info('Market sync finished', extra={'run_id': run_id, 'status': status})
             return {"run_id": run_id, "status": status, "sectors_total": len(sectors),
                     "sectors_ok": ok, "sectors_failed": failed, "errors": errors,
                     "indicators": self.store.latest_indicators()}
         except Exception as exc:
+            logger.exception('Market sync pipeline failed', extra={'run_id': run_id, 'status': 'failed'})
             self.store.finish_run(run_id, datetime.now().isoformat(timespec="seconds"),
                                   "failed", ok, len(sectors) - ok,
                                   errors + [f"pipeline: {type(exc).__name__}: {exc}"])
