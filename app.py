@@ -389,7 +389,7 @@ def main():
             type=["csv"], key="returns_matrix_upload"
         )
         positions_upload = st.file_uploader(
-            "持仓风险 CSV（sector,risk_amount）",
+            "持仓风险 CSV（sector,risk_amount；可选 market_value）",
             type=["csv"], key="sector_risk_upload"
         )
         drawdown_report = correlation_report = sector_risk = None
@@ -451,9 +451,26 @@ def main():
         if any(x is not None for x in (drawdown_report, correlation_report, sector_risk)):
             # Portfolio totals are supplied by the existing portfolio risk page; this
             # standalone snapshot includes the metrics available from uploaded inputs.
+            total_risk = float(sector_positions["risk_amount"].sum()) if positions_upload is not None else 0.0
+            total_market_value = 0.0
+            gross_exposure_pct = 0.0
+            if positions_upload is not None and "market_value" in sector_positions.columns:
+                market_values = pd.to_numeric(sector_positions["market_value"], errors="coerce")
+                if market_values.isna().any() or (market_values < 0).any() or not all(math.isfinite(float(v)) for v in market_values):
+                    st.error("market_value 必须是有限的非负数。")
+                else:
+                    total_market_value = float(market_values.sum())
+                    report_capital = st.number_input(
+                        "计算报告总仓位所用账户净值", min_value=1.0,
+                        value=1_000_000.0, step=10_000.0, key="analytics_report_capital"
+                    )
+                    gross_exposure_pct = total_market_value / report_capital * 100
             portfolio_snapshot = {
-                "total_market_value": 0, "gross_exposure_pct": 0,
-                "total_risk": 0, "total_risk_pct": 0, "alerts": [],
+                "total_market_value": total_market_value,
+                "gross_exposure_pct": gross_exposure_pct,
+                "total_risk": total_risk,
+                "total_risk_pct": 0.0,
+                "alerts": [],
             }
             daily_report = build_daily_risk_report(
                 portfolio_snapshot, drawdown_report, correlation_report,
@@ -468,6 +485,7 @@ def main():
             )
         st.info(
             "说明：回撤基于上传的账户净值序列；相关性基于日收益率并采用成对有效样本。"
+            "持仓 CSV 如包含 market_value，可计算总市值与总仓位；止损风险占净值比例仍需结合账户净值人工核对。"
             "本页不自动抓取行情，也不代表未来相关性或风险水平。"
         )
 
