@@ -46,3 +46,39 @@ def test_alert_message_contains_run_and_freshness_status():
     assert "partial" in message
     assert "stale" in message
     assert "板块A" in message
+
+
+
+def test_webhook_sends_json_payload_when_configured(monkeypatch):
+    import json
+    from services import monitoring
+
+    captured = {}
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(monitoring, "urlopen", fake_urlopen)
+    assert monitoring.send_webhook_alert("test alert", url="https://example.invalid/hook")
+    assert captured["url"] == "https://example.invalid/hook"
+    assert captured["body"] == {"text": "test alert"}
+    assert captured["timeout"] == 8.0
+
+
+def test_webhook_without_configuration_is_not_sent(monkeypatch):
+    from services import monitoring
+
+    monkeypatch.delenv("TRADING_ALERT_WEBHOOK_URL", raising=False)
+    assert monitoring.send_webhook_alert("test alert") is False
