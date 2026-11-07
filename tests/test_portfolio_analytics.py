@@ -100,3 +100,27 @@ def test_daily_report_combines_metrics_and_alerts():
     assert report["max_drawdown_pct"] == 10
     assert report["high_correlation_pairs"] == 1
     assert len(report["alerts"]) == 3
+
+
+@pytest.mark.parametrize("returns", [
+    pd.DataFrame({"A": [0.1], "B": [0.2]}),
+    pd.DataFrame({"date": ["not-a-date"], "A": [0.1], "B": [0.2]}),
+    pd.DataFrame({"date": ["2024-01-01", "2024-01-01"],
+                  "A": [0.1, 0.2], "B": [0.2, 0.3]}),
+    pd.DataFrame({"date": [], "A": [], "B": []}),
+])
+def test_correlation_rejects_missing_invalid_duplicate_or_empty_dates(returns):
+    with pytest.raises(ValueError):
+        analyze_return_correlations(returns, min_periods=2)
+
+
+def test_correlation_sorts_observations_by_date_before_calculation():
+    returns = pd.DataFrame({
+        "date": ["2024-01-03", "2024-01-01", "2024-01-02"],
+        "A": [0.3, 0.1, 0.2],
+        "B": [0.6, 0.2, 0.4],
+    })
+    result = analyze_return_correlations(returns, min_periods=3)
+    pair = result["pairs"].iloc[0]
+    assert pair["correlation"] == pytest.approx(1.0)
+    assert pair["observations"] == 3
