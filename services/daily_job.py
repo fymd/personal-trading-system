@@ -33,8 +33,11 @@ def main():
     logger.info('Daily market job started')
     try:
         result = MarketSync(store=store, benchmark_symbol=args.benchmark).run(args.lookback_days)
-    except Exception:
+    except Exception as exc:
         logger.exception('Daily market job terminated with an error')
+        send_webhook_alert(
+            f"个人交易系统：每日行情同步整体失败\\n异常：{type(exc).__name__}: {exc}"
+        )
         raise
     freshness = check_data_freshness(store, args.benchmark, max_age_days=args.max_data_age_days)
     result['data_freshness'] = freshness
