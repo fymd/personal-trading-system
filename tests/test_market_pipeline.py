@@ -90,3 +90,47 @@ def test_market_sync_fails_sector_when_latest_benchmark_session_is_missing(tmp_p
     assert result["sectors_failed"] == 1
     assert "最新基准交易日" in result["errors"][0]
     assert store.latest_indicators().iloc[0]["final_stage"] == "数据缺失"
+
+
+
+def test_benchmark_failure_finishes_sync_run_audit_record(tmp_path):
+    class Provider:
+        def industry_list(self):
+            return pd.DataFrame({"sector": ["测试行业", "银行"]})
+        def benchmark_history(self, start_date, end_date, symbol):
+            raise RuntimeError("benchmark endpoint unavailable")
+
+    store = MarketStore(tmp_path / "market.sqlite3")
+    sync = MarketSync(provider=Provider(), store=store)
+    try:
+        sync.run(lookback_days=90)
+    except RuntimeError as exc:
+        assert "benchmark endpoint unavailable" in str(exc)
+    else:
+        raise AssertionError("expected benchmark failure")
+
+    run = store.latest_run()
+    assert run[3] == "failed"
+    assert run[5] == 0
+    assert run[6] == 2
+    assert "benchmark endpoint unavailable" in run[7]
+
+
+def test_industry_list_failure_is_recorded_as_failed_run(tmp_path):
+    class Provider:
+        def industry_list(self):
+            raise RuntimeError("industry list unavailable")
+
+    store = MarketStore(tmp_path / "market.sqlite3")
+    sync = MarketSync(provider=Provider(), store=store)
+    try:
+        sync.run(lookback_days=90)
+    except RuntimeError as exc:
+        assert "industry list unavailable" in str(exc)
+    else:
+        raise AssertionError("expected industry-list failure")
+
+    run = store.latest_run()
+    assert run[3] == "failed"
+    assert run[4] == 0
+    assert run[7].startswith("pipeline:")
