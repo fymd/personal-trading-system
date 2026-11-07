@@ -31,17 +31,39 @@ def test_missing_sector_session_does_not_compress_trading_day_windows():
     closes = [100.0 + i for i in range(35)]
     sector = pd.DataFrame({"date": dates, "close": closes, "amount": [1000.0] * 35})
     benchmark = pd.DataFrame({"date": dates, "close": [100.0 + i * 0.5 for i in range(35)]})
-
-    # Drop a sector bar near the end. The benchmark calendar must retain this session
-    # so the next valid 3-session return is never calculated across a 4-session gap.
+    missing_date = dates[22]
     sector = sector.drop(index=22).reset_index(drop=True)
-    result = calculate_indicators(sector, benchmark, "测试行业")
 
-    latest = result.iloc[-1]
-    expected_ret3 = (closes[34] / closes[31] - 1.0) * 100.0
-    assert latest["date"] == dates[34]
-    assert latest["ret3_pct"] == expected_ret3
-    assert len(result) < 35 - 10
+    result = calculate_indicators(sector, benchmark, "测试行业")
+    missing = result[result["date"] == missing_date].iloc[0]
+    assert pd.isna(missing["close"])
+    assert pd.isna(missing["ret3_pct"])
+    assert len(result) == 35 - 9
+
+
+def test_missing_sector_session_resets_consecutive_stage_confirmation():
+    rows = []
+    for day, stage_data in [
+        ("2026-01-01", True),
+        ("2026-01-02", True),
+        ("2026-01-05", False),
+        ("2026-01-06", True),
+        ("2026-01-07", True),
+    ]:
+        values = {"sector": "测试行业", "date": day}
+        if stage_data:
+            values.update({"ret3_pct": 2, "ret5_pct": 3, "rs3_pct": 1.5,
+                           "rs5_pct": 2.5, "amount_ratio": 1.3, "close": 105, "ma5": 100})
+        else:
+            values.update({"ret3_pct": float("nan"), "ret5_pct": float("nan"),
+                           "rs3_pct": float("nan"), "rs5_pct": float("nan"),
+                           "amount_ratio": float("nan"), "close": float("nan"),
+                           "ma5": float("nan")})
+        rows.append(values)
+
+    out = classify_indicators(pd.DataFrame(rows))
+    assert out["初步阶段"].tolist() == ["主升", "主升", "数据缺失", "主升", "主升"]
+    assert out["最终阶段"].tolist() == ["观察", "主升", "数据缺失", "观察", "主升"]
 
 
 def test_classification_marks_first_main_stage_as_observation():
