@@ -75,21 +75,69 @@ class AkShareProvider:
         return self._clean_history(out)
 
     def benchmark_history(self, start_date: str, end_date: str, symbol: str = "csi000300") -> pd.DataFrame:
-        raw = self._request(
-            f"AKShare benchmark history: {symbol}",
-            lambda: self.ak.stock_zh_index_daily_em(
-                symbol=symbol, start_date=start_date, end_date=end_date
-            ),
-        )
-        out = self._rename(
+        """Load CSI 300 history, falling back to AKShare's generic index-history API.
+
+        The Eastmoney csi-prefixed endpoint can currently return a null payload for
+        csi000300. The generic index_zh_a_hist endpoint accepts the plain CSI code
+        000300 and returns the same daily benchmark series.
+        """
+        primary_error = None
+        try:
+            raw = self._request(
+                f"AKShare benchmark history: {symbol}",
+                lambda: self.ak.stock_zh_index_daily_em(
+                    symbol=symbol, start_date=start_date, end_date=end_date
+                ),
+            )
+            out = self._normalize_benchmark(raw)
+            if not out.empty:
+                return out
+            logger.warning("Primary benchmark endpoint returned no rows; trying generic index history")
+        except Exception as exc:
+            primary_error = exc
+            logger.warning(
+                "Primary benchmark endpoint failed (%s); trying generic index history",
+                exc,
+                exc_info=True,
+            )
+
+        fallback = getattr(self.ak, "index_zh_a_hist", None)
+        if fallback is None:
+            raise RuntimeError(
+                "CSI 300 benchmark unavailable: primary endpoint failed and "
+                "AKShare index_zh_a_hist fallback is not available"
+            ) from primary_error
+
+        try:
+            raw = self._request(
+                "AKShare CSI 300 fallback history",
+                lambda: fallback(
+                    symbol="000300", period="daily",
+                    start_date=start_date, end_date=end_date,
+                ),
+            )
+            out = self._normalize_benchmark(raw)
+            if out.empty:
+                raise RuntimeError("AKShare index_zh_a_hist returned no CSI 300 rows")
+            logger.info("Loaded CSI 300 benchmark through index_zh_a_hist fallback")
+            return out
+        except Exception as fallback_error:
+            raise RuntimeError(
+                "CSI 300 benchmark unavailable: both stock_zh_index_daily_em "
+                f"and index_zh_a_hist failed; fallback error: {fallback_error}"
+            ) from fallback_error
+
+    @classmethod
+    def _normalize_benchmark(cls, raw: pd.DataFrame) -> pd.DataFrame:
+        out = cls._rename(
             raw,
             {"日期": "date", "date": "date", "收盘": "close", "close": "close",
-             "成交额": "amount", "amount": "amount"},
+             "成交额": "amount", "成交金额": "amount", "amount": "amount"},
             ("date", "close"),
         )
         if "amount" not in out.columns:
             out["amount"] = None
-        return self._clean_history(out)
+        return cls._clean_history(out)
 
     @staticmethod
     def _clean_history(frame: pd.DataFrame) -> pd.DataFrame:
