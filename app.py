@@ -393,6 +393,7 @@ def main():
             type=["csv"], key="sector_risk_upload"
         )
         drawdown_report = correlation_report = sector_risk = None
+        sector_positions = None
         left, right = st.columns(2)
         if equity_upload is not None:
             try:
@@ -451,10 +452,10 @@ def main():
         if any(x is not None for x in (drawdown_report, correlation_report, sector_risk)):
             # Portfolio totals are supplied by the existing portfolio risk page; this
             # standalone snapshot includes the metrics available from uploaded inputs.
-            total_risk = float(sector_positions["risk_amount"].sum()) if positions_upload is not None else 0.0
+            total_risk = float(sector_positions["risk_amount"].sum()) if sector_positions is not None else 0.0
             total_market_value = 0.0
             gross_exposure_pct = 0.0
-            if positions_upload is not None and "market_value" in sector_positions.columns:
+            if sector_positions is not None and "market_value" in sector_positions.columns:
                 market_values = pd.to_numeric(sector_positions["market_value"], errors="coerce")
                 if market_values.isna().any() or (market_values < 0).any() or not all(math.isfinite(float(v)) for v in market_values):
                     st.error("market_value 必须是有限的非负数。")
