@@ -42,6 +42,16 @@ def test_correlation_rejects_duplicate_dates_and_nonpositive_prices():
         analyze_return_correlation(invalid_prices)
 
 
+def test_correlation_rejects_column_without_enough_valid_prices():
+    prices = pd.DataFrame({
+        "date": ["2026-01-05", "2026-01-06", "2026-01-07"],
+        "ETF_A": [100, None, None],
+        "ETF_B": [50, 51, 52],
+    })
+    with pytest.raises(ValueError, match="至少需要两个有效"):
+        analyze_return_correlation(prices)
+
+
 def test_drawdown_calculates_peak_to_trough_and_current_drawdown():
     nav = pd.DataFrame({
         "date": ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08"],
