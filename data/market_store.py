@@ -54,6 +54,13 @@ class MarketStore:
             )
             return int(cur.lastrowid)
 
+    def set_run_total(self, run_id: int, sectors_total: int):
+        with self.connect() as conn:
+            conn.execute(
+                "UPDATE sync_runs SET sectors_total=? WHERE id=?",
+                (sectors_total, run_id),
+            )
+
     def finish_run(self, run_id: int, finished_at: str, status: str,
                    sectors_ok: int, sectors_failed: int, errors: list[str]):
         with self.connect() as conn:
