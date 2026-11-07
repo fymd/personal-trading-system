@@ -22,9 +22,8 @@ def calculate_indicators(sector_history: pd.DataFrame, benchmark_history: pd.Dat
     s = s.sort_values("date")
     b = b.sort_values("date")
 
-    # Use the benchmark trading calendar as the canonical session sequence. An inner
-    # join would silently remove missing sector sessions and make shift(3)/rolling(10)
-    # span more than 3/10 actual market sessions.
+    # Keep the benchmark calendar as the canonical session sequence. Missing sector
+    # sessions remain explicit rows so stage confirmation cannot jump over a gap.
     merged = b.rename(columns={"close": "benchmark_close"}).merge(
         s, on="date", how="left", validate="one_to_one"
     )
@@ -44,18 +43,27 @@ def calculate_indicators(sector_history: pd.DataFrame, benchmark_history: pd.Dat
     amount10 = merged["amount"].rolling(10, min_periods=10).mean()
     merged["amount_ratio"] = amount3 / amount10.where(amount10 > 0)
     merged["sector"] = sector
-    return merged.dropna(subset=["close", "benchmark_close", "ret3_pct", "ret5_pct",
-                                  "rs3_pct", "rs5_pct", "ma5", "amount_ratio"]).reset_index(drop=True)
+
+    # Discard only the common indicator warm-up. Do not drop later rows with missing
+    # sector observations: classify_indicators uses them to reset confirmation state.
+    return merged.iloc[9:].reset_index(drop=True)
 
 
 def classify_indicators(frame: pd.DataFrame) -> pd.DataFrame:
-    """Apply v2.3 MVP thresholds and require two consecutive raw-stage observations."""
+    """Apply v2.3 thresholds and require consecutive valid trading-session observations."""
     if frame.empty:
         return frame.copy()
     out = frame.sort_values(["sector", "date"]).copy()
     initial, reasons = [], []
     previous_raw_by_sector = {}
+    required = ("ret3_pct", "ret5_pct", "rs3_pct", "rs5_pct",
+                "amount_ratio", "close", "ma5")
     for row in out.itertuples(index=False):
+        if any(pd.isna(getattr(row, field)) for field in required):
+            initial.append("数据缺失")
+            reasons.append("该交易日板块行情缺失或指标窗口不完整，连续确认已重置")
+            previous_raw_by_sector[row.sector] = None
+            continue
         previous_raw = previous_raw_by_sector.get(row.sector)
         cold = row.rs5_pct <= -2.0 and row.ret5_pct <= 0 and row.amount_ratio <= 0.9
         retreat_flags = [row.rs3_pct <= -1.0, row.amount_ratio <= 0.8,
@@ -85,6 +93,10 @@ def classify_indicators(frame: pd.DataFrame) -> pd.DataFrame:
         previous = None
         for row in group.itertuples():
             stage = row.初步阶段
+            if stage == "数据缺失":
+                final.append((row.Index, stage))
+                previous = None
+                continue
             if stage in ("主升", "退潮") and previous != stage and "极端放量" not in row.判定依据:
                 stage = "观察"
             final.append((row.Index, stage))
