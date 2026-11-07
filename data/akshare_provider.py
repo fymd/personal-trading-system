@@ -1,0 +1,75 @@
+"""AKShare adapter: normalize provider-specific frames into stable internal schemas."""
+from __future__ import annotations
+
+from datetime import date
+from typing import Callable
+
+import pandas as pd
+
+
+class AkShareProvider:
+    def __init__(self, ak_module=None):
+        if ak_module is None:
+            try:
+                import akshare as ak_module
+            except ImportError as exc:
+                raise RuntimeError("AKShare 未安装，请先执行 pip install -r requirements.txt") from exc
+        self.ak = ak_module
+
+    @staticmethod
+    def _rename(frame: pd.DataFrame, mapping: dict[str, str], required: tuple[str, ...]) -> pd.DataFrame:
+        if frame is None or frame.empty:
+            return pd.DataFrame(columns=list(required))
+        out = frame.rename(columns=mapping).copy()
+        missing = [name for name in required if name not in out.columns]
+        if missing:
+            raise ValueError(f"AKShare 返回字段不符合预期，缺少: {', '.join(missing)}")
+        return out
+
+    def industry_list(self) -> pd.DataFrame:
+        raw = self.ak.stock_board_industry_name_em()
+        out = self._rename(
+            raw,
+            {"板块名称": "sector", "板块代码": "sector_code", "代码": "sector_code",
+             "最新价": "close", "涨跌幅": "pct_change", "成交额": "amount"},
+            ("sector",),
+        )
+        out["sector"] = out["sector"].astype(str).str.strip()
+        out = out[out["sector"].ne("")].drop_duplicates("sector")
+        return out.reset_index(drop=True)
+
+    def industry_history(self, sector: str, start_date: str, end_date: str) -> pd.DataFrame:
+        raw = self.ak.stock_board_industry_hist_em(
+            symbol=sector, period="daily", start_date=start_date, end_date=end_date, adjust=""
+        )
+        out = self._rename(
+            raw,
+            {"日期": "date", "开盘": "open", "收盘": "close", "最高": "high",
+             "最低": "low", "成交量": "volume", "成交额": "amount", "涨跌幅": "pct_change"},
+            ("date", "close", "amount"),
+        )
+        return self._clean_history(out)
+
+    def benchmark_history(self, start_date: str, end_date: str, symbol: str = "csi000300") -> pd.DataFrame:
+        raw = self.ak.stock_zh_index_daily_em(
+            symbol=symbol, start_date=start_date, end_date=end_date
+        )
+        out = self._rename(
+            raw,
+            {"日期": "date", "收盘": "close", "成交额": "amount"},
+            ("date", "close"),
+        )
+        if "amount" not in out.columns:
+            out["amount"] = None
+        return self._clean_history(out)
+
+    @staticmethod
+    def _clean_history(frame: pd.DataFrame) -> pd.DataFrame:
+        out = frame.copy()
+        out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+        for col in ("open", "close", "high", "low", "volume", "amount", "pct_change"):
+            if col in out.columns:
+                out[col] = pd.to_numeric(out[col], errors="coerce")
+        out = out.dropna(subset=["date", "close"])
+        out = out[out["close"] > 0].drop_duplicates("date", keep="last")
+        return out.sort_values("date").reset_index(drop=True)
