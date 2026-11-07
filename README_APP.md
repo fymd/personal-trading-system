@@ -24,7 +24,7 @@ streamlit run app.py
 ```bash
 python -m services.daily_job --db market_data.sqlite3 --lookback-days 90
 ```
-默认沪深300指数代码为 `csi000300`。行业板块通过 `stock_board_industry_name_em()` 和 `stock_board_industry_hist_em(..., period="日k", ...)` 获取；基准通过 `stock_zh_index_daily_em(symbol="csi000300", ...)` 获取。
+行业板块通过 `stock_board_industry_name_em()` 和 `stock_board_industry_hist_em(..., period="日k", ...)` 获取。沪深300基准优先使用 `stock_zh_index_daily_em(symbol="csi000300", ...)`；当该东方财富接口返回空数据或异常时，自动回退到 AKShare 通用指数接口 `index_zh_a_hist(symbol="000300", period="daily", ...)`。两个接口均不可用或回退结果为空时，任务会明确报错，不会跳过基准数据继续生成误导性的 RS 分析。
 
 程序提供单次 CLI 任务，不会自行在后台常驻或创建操作系统计划任务。请使用 Windows Task Scheduler 或 cron 配置为每个交易日收盘后运行，并监控退出码及 SQLite 的 `sync_runs` 表。建议先留出数据源更新延迟，再按实际更新情况调整执行时间。
 
