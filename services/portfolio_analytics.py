@@ -71,7 +71,7 @@ def analyze_return_correlations(returns, min_periods=20, warning_threshold=0.80)
     frame = returns.copy()
     if frame.empty:
         raise ValueError("Returns data must contain at least one observation.")
-    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce").dt.normalize()
     if frame["date"].isna().any():
         raise ValueError("Returns data contains invalid dates.")
     if frame["date"].duplicated().any():
