@@ -6,6 +6,9 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
+from data.market_store import MarketStore
+from services.market_sync import MarketSync
+
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "trading_journal.db"
 STAGES = ["主升", "补涨", "退潮", "冷门", "观察"]
@@ -129,7 +132,7 @@ def main():
 
     with st.sidebar:
         st.header("工作区")
-        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "交易日志", "数据格式说明"])
+        page = st.radio("功能", ["总览与板块轮动", "行情同步与自动分析", "共振检查", "仓位计算器", "交易日志", "数据格式说明"])
         st.divider()
         st.caption("数据默认保存在本机 SQLite；行情需由你导入或填写。")
 
@@ -183,6 +186,40 @@ def main():
                 st.rerun()
         else:
             st.warning("尚未载入行情数据。")
+
+    elif page == "行情同步与自动分析":
+        st.subheader("AkShare 行业板块日线同步")
+        st.info("按需手动触发一次历史行情同步。每日自动运行请配置操作系统计划任务，详见 README_APP.md。")
+        market_db = APP_DIR / "market_data.sqlite3"
+        st.caption(f"行情数据库：{market_db.name}")
+        lookback = st.selectbox("回补自然日范围", [90, 180, 365], index=0)
+        if st.button("立即同步行业板块与沪深300", type="primary"):
+            try:
+                with st.spinner("正在获取板块列表、沪深300及各行业历史日线；首次运行可能需要数分钟……"):
+                    store = MarketStore(market_db)
+                    result = MarketSync(store=store).run(lookback_days=int(lookback))
+                st.success(f"同步完成：{result['sectors_ok']} 个板块成功，{result['sectors_failed']} 个失败。状态：{result['status']}")
+                if result["errors"]:
+                    st.warning("部分板块同步失败：")
+                    st.code("\\n".join(result["errors"][:30]))
+            except Exception as exc:
+                st.error(f"行情同步失败：{type(exc).__name__}: {exc}")
+        if market_db.exists():
+            try:
+                store = MarketStore(market_db)
+                latest = store.latest_indicators()
+                if not latest.empty:
+                    st.markdown("**各板块最新指标与阶段**")
+                    st.dataframe(latest, use_container_width=True, hide_index=True)
+                    st.download_button("导出最新板块分析 CSV", latest.to_csv(index=False).encode("utf-8-sig"),
+                                       "latest_sector_analysis.csv", "text/csv")
+                else:
+                    st.info("数据库已初始化，尚无可展示的指标。请先运行同步。")
+                run = store.latest_run()
+                if run:
+                    st.caption(f"最近任务：{run[1]}｜状态：{run[3]}｜成功 {run[5]} / 失败 {run[6]}")
+            except Exception as exc:
+                st.warning(f"读取行情数据库失败：{exc}")
 
     elif page == "共振检查":
         st.subheader("四项共振检查")
