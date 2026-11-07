@@ -7,6 +7,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 from services.portfolio_risk import analyze_portfolio
+from services.historical_risk import analyze_return_correlation, analyze_drawdown
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "trading_journal.db"
@@ -188,7 +189,7 @@ def main():
 
     with st.sidebar:
         st.header("工作区")
-        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "组合风险管理", "交易日志", "数据格式说明"])
+        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "组合风险管理", "历史风险分析", "交易日志", "数据格式说明"])
         st.divider()
         st.caption("数据默认保存在本机 SQLite；行情需由你导入或填写。")
 
@@ -372,6 +373,79 @@ def main():
                 )
             except Exception as exc:
                 st.error(f"组合风险计算失败：{exc}")
+
+    elif page == "历史风险分析":
+        st.subheader("历史相关性与回撤监控")
+        st.info(
+            "请导入真实的复权收盘价和账户净值历史。相关性基于每日价格收益率计算；"
+            "最大回撤基于导入净值序列的历史峰值计算。缺少数据时不会生成估算值。"
+        )
+        st.markdown("**一、标的价格历史（CSV）**")
+        st.caption("格式：date, 标的代码1, 标的代码2 ...；日期唯一，价格使用正数，建议使用复权收盘价。")
+        sample_prices = pd.DataFrame({
+            "date": ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09"],
+            "ETF_A": [100, 101, 99, 102, 103],
+            "ETF_B": [50, 50.5, 49.7, 51, 51.2],
+            "ETF_C": [80, 79.5, 80.8, 80.2, 81.0],
+        })
+        price_file = st.file_uploader("上传价格历史 CSV", type=["csv"], key="historical_prices_upload")
+        price_frame = None
+        if price_file is not None:
+            try:
+                price_frame = pd.read_csv(price_file)
+                report = analyze_return_correlation(price_frame)
+                st.markdown("**收益率相关性矩阵**")
+                st.dataframe(report["correlation"].round(3), use_container_width=True)
+                st.caption(
+                    f"有效日收益观察数按标的两两统计；至少需要 {report['min_observations']} 个共同观察值。"
+                    "样本不足的相关系数显示为空。相关性不代表因果关系，也不保证未来关系稳定。"
+                )
+                with st.expander("查看每日收益率"):
+                    st.dataframe(report["returns"], use_container_width=True)
+            except Exception as exc:
+                st.error(f"价格历史分析失败：{exc}")
+        else:
+            st.caption("尚未上传价格数据，因此暂不计算相关性。")
+            with st.expander("查看 CSV 格式示例（仅格式演示，不参与计算）"):
+                st.dataframe(sample_prices, use_container_width=True, hide_index=True)
+
+        st.divider()
+        st.markdown("**二、账户净值历史（CSV）**")
+        st.caption("格式：date,nav；nav 为每日账户净值，必须为正数，建议使用每日收盘后的账户净值。")
+        nav_file = st.file_uploader("上传账户净值 CSV", type=["csv"], key="historical_nav_upload")
+        threshold = st.number_input(
+            "当前回撤预警阈值（%）", min_value=0.1, max_value=100.0, value=10.0, step=0.5,
+            key="historical_drawdown_threshold",
+        )
+        if nav_file is not None:
+            try:
+                nav_frame = pd.read_csv(nav_file)
+                drawdown = analyze_drawdown(nav_frame, warning_drawdown_pct=threshold)
+                m1, m2, m3 = st.columns(3)
+                m1.metric("最新净值", f"{drawdown['latest_nav']:,.4f}")
+                m2.metric("历史最大回撤", f"{drawdown['max_drawdown_pct']:.2f}%")
+                m3.metric("当前回撤", f"{drawdown['current_drawdown_pct']:.2f}%")
+                if drawdown["alerts"]:
+                    for alert in drawdown["alerts"]:
+                        st.error(alert)
+                else:
+                    st.success("当前回撤未触发预警阈值。")
+                st.line_chart(drawdown["history"][["nav", "running_peak"]])
+                st.line_chart(drawdown["history"][["drawdown_pct"]])
+                st.caption(
+                    f"历史峰值日期：{drawdown['peak_date'].date()}。"
+                    "最大回撤为历史峰值至后续谷值的最大跌幅；本版不推断恢复所需时间。"
+                )
+                st.download_button(
+                    "下载回撤分析 CSV",
+                    drawdown["history"].to_csv(index=True).encode("utf-8-sig"),
+                    "portfolio_drawdown_history.csv",
+                    "text/csv",
+                )
+            except Exception as exc:
+                st.error(f"净值历史分析失败：{exc}")
+        else:
+            st.caption("尚未上传账户净值数据，因此暂不计算回撤。")
 
     elif page == "交易日志":
         st.subheader("交易记录")
