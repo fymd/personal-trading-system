@@ -24,7 +24,7 @@ streamlit run app.py
 ```bash
 python -m services.daily_job --db market_data.sqlite3 --lookback-days 90
 ```
-默认沪深300指数代码为 `csi000300`。行业板块通过 `stock_board_industry_name_em()` 和 `stock_board_industry_hist_em(..., period="daily", ...)` 获取；基准通过 `stock_zh_index_daily_em(symbol="csi000300", ...)` 获取。
+默认沪深300指数代码为 `csi000300`。行业板块通过 `stock_board_industry_name_em()` 和 `stock_board_industry_hist_em(..., period="日k", ...)` 获取；基准通过 `stock_zh_index_daily_em(symbol="csi000300", ...)` 获取。
 
 程序提供单次 CLI 任务，不会自行在后台常驻或创建操作系统计划任务。请使用 Windows Task Scheduler 或 cron 配置为每个交易日收盘后运行，并监控退出码及 SQLite 的 `sync_runs` 表。建议先留出数据源更新延迟，再按实际更新情况调整执行时间。
 
