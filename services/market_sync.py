@@ -25,6 +25,8 @@ class MarketSync:
         start_text, end_text = start.strftime("%Y%m%d"), end.strftime("%Y%m%d")
         started = datetime.now().isoformat(timespec="seconds")
         sectors = self.provider.industry_list()
+        if sectors.empty or "sector" not in sectors.columns:
+            raise ValueError("AKShare 未返回有效行业板块列表，停止分析以避免生成空结果")
         run_id = self.store.start_run(started, len(sectors))
         errors, ok = [], 0
         try:
