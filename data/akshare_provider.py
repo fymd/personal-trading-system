@@ -31,7 +31,9 @@ class AkShareProvider:
         out = self._rename(
             raw,
             {"板块名称": "sector", "板块代码": "sector_code", "代码": "sector_code",
-             "最新价": "close", "涨跌幅": "pct_change", "成交额": "amount"},
+             "name": "sector", "code": "sector_code", "最新价": "close",
+             "close": "close", "涨跌幅": "pct_change", "pct_change": "pct_change",
+             "成交额": "amount", "amount": "amount"},
             ("sector",),
         )
         out["sector"] = out["sector"].astype(str).str.strip()
@@ -44,8 +46,11 @@ class AkShareProvider:
         )
         out = self._rename(
             raw,
-            {"日期": "date", "开盘": "open", "收盘": "close", "最高": "high",
-             "最低": "low", "成交量": "volume", "成交额": "amount", "涨跌幅": "pct_change"},
+            {"日期": "date", "date": "date", "开盘": "open", "open": "open",
+             "收盘": "close", "close": "close", "最高": "high", "high": "high",
+             "最低": "low", "low": "low", "成交量": "volume", "volume": "volume",
+             "成交额": "amount", "amount": "amount", "涨跌幅": "pct_change",
+             "pct_change": "pct_change"},
             ("date", "close", "amount"),
         )
         return self._clean_history(out)
@@ -56,7 +61,8 @@ class AkShareProvider:
         )
         out = self._rename(
             raw,
-            {"日期": "date", "收盘": "close", "成交额": "amount"},
+            {"日期": "date", "date": "date", "收盘": "close", "close": "close",
+             "成交额": "amount", "amount": "amount"},
             ("date", "close"),
         )
         if "amount" not in out.columns:
