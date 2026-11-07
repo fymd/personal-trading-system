@@ -21,7 +21,7 @@ def test_indicators_align_on_common_trading_dates():
                            "amount": [1000.0]*15})
     benchmark = pd.DataFrame({"date": dates, "close": [100+i*0.5 for i in range(15)]})
     result = calculate_indicators(sector, benchmark, "测试行业")
-    assert len(result) == 5
+    assert len(result) == 6
     assert result.iloc[-1]["ret3_pct"] > result.iloc[-1]["benchmark_ret3_pct"]
     assert result.iloc[-1]["rs3_pct"] > 0
     assert result.iloc[-1]["amount_ratio"] == 1.0
