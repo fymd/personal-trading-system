@@ -3,10 +3,12 @@ name: Python tests
 on:
   push:
     branches:
-      - feature/trading-dashboard-mvp
+      - "feature/**"
+      - "fix/**"
   pull_request:
     branches:
       - main
+      - "feature/**"
 
 jobs:
   tests:
