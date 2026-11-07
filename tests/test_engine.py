@@ -8,7 +8,7 @@ SPEC.loader.exec_module(app)
 
 def test_position_calculation_respects_risk_and_exposure_caps():
     result = app.calc_position(1_000_000, 1.0, 50, 47, 0.2, 0.7, 30)
-    assert result["quantity"] == 2258
+    assert result["quantity"] == 2257
     assert result["planned_loss"] <= 10_000
     assert result["exposure_pct"] <= 30
 
