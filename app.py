@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import date
 import pandas as pd
 import streamlit as st
+from services.portfolio_risk import analyze_portfolio
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "trading_journal.db"
@@ -187,7 +188,7 @@ def main():
 
     with st.sidebar:
         st.header("工作区")
-        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "交易日志", "数据格式说明"])
+        page = st.radio("功能", ["总览与板块轮动", "共振检查", "仓位计算器", "组合风险管理", "交易日志", "数据格式说明"])
         st.divider()
         st.caption("数据默认保存在本机 SQLite；行情需由你导入或填写。")
 
@@ -300,6 +301,77 @@ def main():
                 st.error("当前阶段或风险参数导致建议数量为 0。")
         except Exception as exc:
             st.error(str(exc))
+
+    elif page == "组合风险管理":
+        st.subheader("组合风险与集中度")
+        st.warning(
+            "请使用最新持仓快照。止损风险金额应估算到止损价的损失，并尽量包含费用和滑点。"
+            "本页面不连接券商账户，也不会自动调整或平仓。"
+        )
+        sample_positions = pd.DataFrame([
+            {"symbol": "510300", "sector": "宽基指数", "market_value": 180000, "risk_amount": 3600},
+            {"symbol": "半导体ETF", "sector": "半导体", "market_value": 150000, "risk_amount": 7500},
+            {"symbol": "芯片设备A", "sector": "半导体", "market_value": 80000, "risk_amount": 5200},
+        ])
+        upload = st.file_uploader("导入持仓 CSV（可选）", type=["csv"], key="portfolio_upload")
+        if upload is not None:
+            try:
+                positions = pd.read_csv(upload)
+            except Exception as exc:
+                st.error(f"持仓 CSV 读取失败：{exc}")
+                positions = sample_positions
+        else:
+            positions = sample_positions
+        st.caption("字段：symbol（标的）、sector（行业/板块）、market_value（持仓市值）、risk_amount（到止损位的预计亏损金额）。可直接编辑下表。")
+        edited_positions = st.data_editor(
+            positions,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="portfolio_positions_editor",
+        )
+        st.markdown("**组合风险阈值**")
+        c1, c2, c3 = st.columns(3)
+        capital = c1.number_input("账户净值", min_value=1.0, value=1_000_000.0, step=10_000.0, key="portfolio_capital")
+        max_risk = c2.number_input("组合止损风险上限 %", min_value=0.01, max_value=100.0, value=3.0, step=0.1)
+        max_gross = c3.number_input("总仓位上限 %", min_value=0.01, max_value=500.0, value=100.0, step=1.0)
+        c4, c5 = st.columns(2)
+        max_sector = c4.number_input("单行业仓位上限 %", min_value=0.01, max_value=500.0, value=35.0, step=1.0)
+        max_symbol = c5.number_input("单标的仓位上限 %", min_value=0.01, max_value=500.0, value=20.0, step=1.0)
+        if st.button("计算组合风险", type="primary"):
+            try:
+                report = analyze_portfolio(
+                    edited_positions,
+                    capital,
+                    max_total_risk_pct=max_risk,
+                    max_gross_exposure_pct=max_gross,
+                    max_sector_exposure_pct=max_sector,
+                    max_symbol_exposure_pct=max_symbol,
+                )
+                k1, k2, k3, k4 = st.columns(4)
+                k1.metric("持仓总市值", f"{report['total_market_value']:,.0f}")
+                k2.metric("总仓位", f"{report['gross_exposure_pct']:.2f}%")
+                k3.metric("止损风险金额", f"{report['total_risk']:,.0f}")
+                k4.metric("组合风险占净值", f"{report['total_risk_pct']:.2f}%")
+                if report["within_limits"]:
+                    st.success("组合风险和集中度均在设定阈值内。")
+                else:
+                    for alert in report["alerts"]:
+                        st.error(alert)
+                left, right = st.columns(2)
+                with left:
+                    st.markdown("**行业仓位分布**")
+                    st.dataframe(report["sector_exposure"], use_container_width=True, hide_index=True)
+                with right:
+                    st.markdown("**单标的仓位分布**")
+                    st.dataframe(report["symbol_exposure"], use_container_width=True, hide_index=True)
+                st.download_button(
+                    "下载行业敞口 CSV",
+                    report["sector_exposure"].to_csv(index=False).encode("utf-8-sig"),
+                    "portfolio_sector_exposure.csv",
+                    "text/csv",
+                )
+            except Exception as exc:
+                st.error(f"组合风险计算失败：{exc}")
 
     elif page == "交易日志":
         st.subheader("交易记录")
