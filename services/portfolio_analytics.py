@@ -66,10 +66,17 @@ def analyze_return_correlations(returns, min_periods=20, warning_threshold=0.80)
     """Calculate pairwise Pearson correlations from daily returns, not prices."""
     if not isinstance(returns, pd.DataFrame):
         returns = pd.DataFrame(returns)
-    if "date" in returns.columns:
-        frame = returns.drop(columns=["date"]).copy()
-    else:
-        frame = returns.copy()
+    if "date" not in returns.columns:
+        raise ValueError("Returns data must include a date column.")
+    frame = returns.copy()
+    if frame.empty:
+        raise ValueError("Returns data must contain at least one observation.")
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    if frame["date"].isna().any():
+        raise ValueError("Returns data contains invalid dates.")
+    if frame["date"].duplicated().any():
+        raise ValueError("Returns data dates must be unique.")
+    frame = frame.sort_values("date").drop(columns=["date"]).reset_index(drop=True)
     if len(frame.columns) < 2:
         raise ValueError("At least two symbol return columns are required.")
     if len(set(map(str, frame.columns))) != len(frame.columns):
