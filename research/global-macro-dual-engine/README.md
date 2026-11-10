@@ -39,9 +39,9 @@
 - [19-dynamic-position-sizing-execution-v1.0.md](19-dynamic-position-sizing-execution-v1.0.md)：动态仓位、失效价格、分批建仓及A股执行约束。
 - [20-execution-cost-liquidity-stress-v1.0.md](20-execution-cost-liquidity-stress-v1.0.md)：交易成本、成交真实性、流动性与极端压力测试。
 - [21-dual-engine-backtest-validation-v1.0.md](21-dual-engine-backtest-validation-v1.0.md)：双引擎独立回测、Walk-forward、消融实验与准入标准。
-- [22-leader-engine-backtest-v1.0.md](22-leader-engine-backtest-v1.0.md)：龙头短线四类形态、点时识别、退出和失败样本验证。
+- [22-leader-engine-backtest-v1.0.md](22-leader-engine-backtest-v1.0.md)：龙头短线四类形态、点时识别、退出和失败样本验证。\n- [23-trend-engine-backtest-v1.0.md](23-trend-engine-backtest-v1.0.md)：趋势波段行业景气、公司质量、四类形态、点时数据与历史回测准入规格。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
-- [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要。
+- [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要；最新记录见0013。
 
 ## 对话与研究归档约定
 持续归档重要用户判断、关键决策、逻辑分析、研究规则、公式、伪代码、待验证假设、反例和版本变更。采用结构化摘要，不承诺逐字备份全部聊天。公开仓库不存放账户凭证或个人敏感资料。
