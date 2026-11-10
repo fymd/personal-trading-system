@@ -55,3 +55,6 @@
 每项规则记录定义、公式、输入字段、观察周期、信号时间、可用时间、异常处理、参数来源、测试方法和失效条件。保留负面结果和被否定的假设。修改规则必须记录版本、理由和验证结果。
 
 **状态声明：** 当前文档是研究讨论整理的规格初稿，不是已验证策略或可运行程序。仅供个人研究学习，不构成投资建议。
+
+- [26-data-source-availability-quality-cost-v1.0.md](26-data-source-availability-quality-cost-v1.0.md)：免费优先的数据源、官方来源、质量验收与采购纪律。
+- [conversation-log/0016-v1.0-free-first-data-sources.md](conversation-log/0016-v1.0-free-first-data-sources.md)：第26阶段免费优先数据源评估日志。
