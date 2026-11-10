@@ -58,3 +58,6 @@
 
 - [26-data-source-availability-quality-cost-v1.0.md](26-data-source-availability-quality-cost-v1.0.md)：免费优先的数据源、官方来源、质量验收与采购纪律。
 - [conversation-log/0016-v1.0-free-first-data-sources.md](conversation-log/0016-v1.0-free-first-data-sources.md)：第26阶段免费优先数据源评估日志。
+
+- [27-p0-free-data-sample-audit-v1.0.md](27-p0-free-data-sample-audit-v1.0.md)：P0免费数据同样本试采集设计、字段口径、质量验收与未完成事项。
+- [conversation-log/0017-v1.0-p0-free-data-audit.md](conversation-log/0017-v1.0-p0-free-data-audit.md)：第27阶段试采集准备日志。
