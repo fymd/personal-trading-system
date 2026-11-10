@@ -43,7 +43,7 @@
 - [24-portfolio-backtest-validation-v1.0.md](24-portfolio-backtest-validation-v1.0.md)：双引擎组合互补性、共同风险、资金冲突与组合样本外验证规格。
 - [25-unified-data-architecture-backtest-foundation-v1.0.md](25-unified-data-architecture-backtest-foundation-v1.0.md)：统一数据层、点时治理、历史股票池、数据质量和回测复现架构。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
-- [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要；最新记录见0014。
+- [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要；最新记录见0015。
 
 ## 对话与研究归档约定
 持续归档重要用户判断、关键决策、逻辑分析、研究规则、公式、伪代码、待验证假设、反例和版本变更。采用结构化摘要，不承诺逐字备份全部聊天。公开仓库不存放账户凭证或个人敏感资料。
