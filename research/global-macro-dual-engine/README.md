@@ -22,6 +22,7 @@
 - [03-market-regime-v1.1.md](03-market-regime-v1.1.md)：市场环境识别与择时规格。
 - [04-sector-strength-rotation-v1.2.md](04-sector-strength-rotation-v1.2.md)：板块强度、主线识别与行业轮动。
 - [05-leader-short-term-engine-v1.3.md](05-leader-short-term-engine-v1.3.md)：龙头短线引擎、候选识别、入场与退出。
+- [06-trend-swing-engine-v1.4.md](06-trend-swing-engine-v1.4.md)：趋势波段引擎、行业景气、公司质量、趋势与估值风险。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
 - [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要。
 
