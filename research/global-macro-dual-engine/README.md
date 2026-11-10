@@ -62,13 +62,13 @@
 - [27-p0-free-data-sample-audit-v1.0.md](27-p0-free-data-sample-audit-v1.0.md)：P0免费数据同样本试采集设计、字段口径、质量验收与未完成事项。
 - [conversation-log/0017-v1.0-p0-free-data-audit.md](conversation-log/0017-v1.0-p0-free-data-audit.md)：第27阶段试采集准备日志。
 
-- P0采集程序以本目录GitHub文件为准：`p0_free_data_audit.py` V1.2及`requirements_p0_audit.txt`。部署前请阅读28号手册开头的【特别备注】。
+- P0采集程序以本目录GitHub文件为准：`p0_free_data_audit.py` V1.3及`requirements_p0_audit.txt`。部署前请阅读28号手册开头的【特别备注】。
 
 
-## 测试机部署与P0采集程序
+## 第29阶段：P0采集程序部署前加固\n- [29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md](29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md)：Run ID隔离、旧文件污染防护、字段与重复日期检查、文件SHA-256及未解决事项。\n- [conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md](conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md)：第29阶段代码审查和部署决策。\n\n## 测试机部署与P0采集程序
 - [28-p0-test-machine-deployment-and-acceptance-v1.0.md](28-p0-test-machine-deployment-and-acceptance-v1.0.md)：测试机部署、运行步骤、故障排查、质量验收清单与后续优化优先级。
 - [conversation-log/0018-v1.0-test-machine-deployment.md](conversation-log/0018-v1.0-test-machine-deployment.md)：第28阶段脚本审查和部署决策。
-- [p0_free_data_audit.py](p0_free_data_audit.py)：P0免费数据试采集脚本V1.2。
+- [p0_free_data_audit.py](p0_free_data_audit.py)：P0免费数据试采集脚本V1.3。
 - [requirements_p0_audit.txt](requirements_p0_audit.txt)：P0采集脚本Python依赖。
 
 
