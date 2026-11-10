@@ -12,7 +12,7 @@ VERSION = "1.3"
 START, END = "2019-01-01", "2019-12-31"
 RECENT_START, RECENT_END = "2026-10-01", "2026-11-10"
 OUT = Path("p0_free_data_audit")
-RUN_ID = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+RUN_ID = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 RUN_OUT = OUT / "runs" / RUN_ID
 RAW, NORM = RUN_OUT / "raw", RUN_OUT / "normalized"
 for p in (RAW, NORM):
