@@ -63,3 +63,10 @@
 - [conversation-log/0017-v1.0-p0-free-data-audit.md](conversation-log/0017-v1.0-p0-free-data-audit.md)：第27阶段试采集准备日志。
 
 - P0采集程序：本地附件 `p0_free_data_audit.py`（V1.1修正，需在可联网Python环境运行）；脚本不含数据文件。
+
+
+## 测试机部署与P0采集程序
+- [28-p0-test-machine-deployment-and-acceptance-v1.0.md](28-p0-test-machine-deployment-and-acceptance-v1.0.md)：测试机部署、运行步骤、故障排查、质量验收清单与后续优化优先级。
+- [conversation-log/0018-v1.0-test-machine-deployment.md](conversation-log/0018-v1.0-test-machine-deployment.md)：第28阶段脚本审查和部署决策。
+- [p0_free_data_audit.py](p0_free_data_audit.py)：P0免费数据试采集脚本V1.2。
+- [requirements_p0_audit.txt](requirements_p0_audit.txt)：P0采集脚本Python依赖。
