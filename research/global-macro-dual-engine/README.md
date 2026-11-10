@@ -34,6 +34,12 @@
 - [14-market-breadth-model-v1.0.md](14-market-breadth-model-v1.0.md)：市场宽度四层结构、背离监控、双引擎适配与研究标签。
 - [15-market-breadth-validation-v1.0.md](15-market-breadth-validation-v1.0.md)：市场宽度历史验证假设、Walk-forward设计、阈值校准和评价标准。
 - [16-six-market-regimes-v1.0.md](16-six-market-regimes-v1.0.md)：A股六类市场状态、识别顺序、双引擎授权和状态转换原则。
+- [17-market-regime-transition-conflict-v1.0.md](17-market-regime-transition-conflict-v1.0.md)：市场状态转换、证据冲突、滞回与置信度处理。
+- [18-regime-engine-risk-budget-v1.0.md](18-regime-engine-risk-budget-v1.0.md)：市场状态、双引擎和组合三层风险预算联动。
+- [19-dynamic-position-sizing-execution-v1.0.md](19-dynamic-position-sizing-execution-v1.0.md)：动态仓位、失效价格、分批建仓及A股执行约束。
+- [20-execution-cost-liquidity-stress-v1.0.md](20-execution-cost-liquidity-stress-v1.0.md)：交易成本、成交真实性、流动性与极端压力测试。
+- [21-dual-engine-backtest-validation-v1.0.md](21-dual-engine-backtest-validation-v1.0.md)：双引擎独立回测、Walk-forward、消融实验与准入标准。
+- [22-leader-engine-backtest-v1.0.md](22-leader-engine-backtest-v1.0.md)：龙头短线四类形态、点时识别、退出和失败样本验证。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
 - [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要。
 
