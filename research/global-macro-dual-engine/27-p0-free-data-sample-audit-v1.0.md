@@ -65,14 +65,14 @@
 
 ## 6. 采集程序
 
-已准备文件：`p0_free_data_audit.py`。
+已准备文件：`p0_free_data_audit.py`（V1.1，本轮修正版本）。
 运行环境需安装Python及依赖：
-`pip install pandas baostock akshare`
+`pip install pandas baostock akshare`（无需pyarrow）
 
 运行：
 `python p0_free_data_audit.py`
 
-程序将创建`p0_free_data_audit/`目录，输出：
+V1.1修正：BaoStock股票与指数使用不同字段列表，避免把个股专用字段请求到指数接口；记录脚本版本和依赖版本；统一输出标准化CSV，不要求额外安装Parquet引擎。指数行情独立采集，不与个股行情混用字段。\n\n程序将创建`p0_free_data_audit/`目录，输出：
 - raw：两类来源的原始CSV；
 - normalized：标准化CSV；
 - manifest_and_results.json：采集时间、接口状态、异常和样本结果；
