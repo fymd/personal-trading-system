@@ -35,7 +35,7 @@
 - [conversation-log/0009-v1.0-decision-state-machine.md](conversation-log/0009-v1.0-decision-state-machine.md)：市场、个股、组合三级决策状态机与冲突处理。
 - [conversation-log/0010-v1.0-market-indicator-dictionary.md](conversation-log/0010-v1.0-market-indicator-dictionary.md)：第一批市场环境指标定义、数据治理和重复计分规则。
 - [conversation-log/0011-v1.0-market-regimes.md](conversation-log/0011-v1.0-market-regimes.md)：市场宽度模型、历史验证设计与六类市场状态研究决策。
-- [conversation-log/0012-v1.0-execution-and-backtest-research.md](conversation-log/0012-v1.0-execution-and-backtest-research.md)：第17–22阶段风险预算、动态执行、压力测试和回测验证决策。
+- [conversation-log/0012-v1.0-execution-and-backtest-research.md](conversation-log/0012-v1.0-execution-and-backtest-research.md)：第17–22阶段风险预算、动态执行、压力测试和回测验证决策。\n- [conversation-log/0013-v1.0-trend-engine-backtest.md](conversation-log/0013-v1.0-trend-engine-backtest.md)：第23阶段趋势波段历史回测规格与第24阶段研究方向。
 
 ## 后续路线
 
@@ -44,7 +44,7 @@
 | 理论规格整合 | 指标字典与数据质量标准 | 指标定义、数据源等级、时间戳/可用时间、缺失与异常处理、重复指标识别 |
 | 市场状态研究 | 状态转换与冲突处理 | 趋势收敛、弱势修复确认、证据冲突、置信度和授权收缩规则 |
 | 数据基础设施 | 数据与回测基础设施 | 统一数据字典、时间对齐、交易成本与回测引擎 |
-| 系统验证 | Walk-forward与样本外评估 | 参数稳定性、市场分层表现、模拟交易验收 |
+| 双引擎组合验证 | 龙头与趋势组合历史验证 | 互补性、相关性、资金占用、组合回撤与尾部风险 |\n| 系统验证 | Walk-forward与样本外评估 | 参数稳定性、市场分层表现、模拟交易验收 |
 
 ## 未决事项
 1. 多指数趋势评分汇总方法和权重。
