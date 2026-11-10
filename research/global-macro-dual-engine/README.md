@@ -39,7 +39,8 @@
 - [19-dynamic-position-sizing-execution-v1.0.md](19-dynamic-position-sizing-execution-v1.0.md)：动态仓位、失效价格、分批建仓及A股执行约束。
 - [20-execution-cost-liquidity-stress-v1.0.md](20-execution-cost-liquidity-stress-v1.0.md)：交易成本、成交真实性、流动性与极端压力测试。
 - [21-dual-engine-backtest-validation-v1.0.md](21-dual-engine-backtest-validation-v1.0.md)：双引擎独立回测、Walk-forward、消融实验与准入标准。
-- [22-leader-engine-backtest-v1.0.md](22-leader-engine-backtest-v1.0.md)：龙头短线四类形态、点时识别、退出和失败样本验证。\n- [23-trend-engine-backtest-v1.0.md](23-trend-engine-backtest-v1.0.md)：趋势波段行业景气、公司质量、四类形态、点时数据与历史回测准入规格。
+- [22-leader-engine-backtest-v1.0.md](22-leader-engine-backtest-v1.0.md)：龙头短线四类形态、点时识别、退出和失败样本验证。
+- [23-trend-engine-backtest-v1.0.md](23-trend-engine-backtest-v1.0.md)：趋势波段行业景气、公司质量、四类形态、点时数据与历史回测准入规格。
 - [24-portfolio-backtest-validation-v1.0.md](24-portfolio-backtest-validation-v1.0.md)：双引擎组合互补性、共同风险、资金冲突与组合样本外验证规格。
 - [25-unified-data-architecture-backtest-foundation-v1.0.md](25-unified-data-architecture-backtest-foundation-v1.0.md)：统一数据层、点时治理、历史股票池、数据质量和回测复现架构。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
@@ -65,7 +66,11 @@
 - P0采集程序以本目录GitHub文件为准：`p0_free_data_audit.py` V1.3及`requirements_p0_audit.txt`。部署前请阅读28号手册开头的【特别备注】。
 
 
-## 第29阶段：P0采集程序部署前加固\n- [29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md](29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md)：Run ID隔离、旧文件污染防护、字段与重复日期检查、文件SHA-256及未解决事项。\n- [conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md](conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md)：第29阶段代码审查和部署决策。\n\n## 测试机部署与P0采集程序
+## 第29阶段：P0采集程序部署前加固
+- [29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md](29-p0-audit-v1.3-hardening-and-audit-boundaries-v1.0.md)：Run ID隔离、旧文件污染防护、字段与重复日期检查、文件SHA-256及未解决事项。
+- [conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md](conversation-log/0019-v1.0-p0-audit-v1.3-hardening.md)：第29阶段代码审查和部署决策。
+
+## 测试机部署与P0采集程序
 - [28-p0-test-machine-deployment-and-acceptance-v1.0.md](28-p0-test-machine-deployment-and-acceptance-v1.0.md)：测试机部署、运行步骤、故障排查、质量验收清单与后续优化优先级。
 - [conversation-log/0018-v1.0-test-machine-deployment.md](conversation-log/0018-v1.0-test-machine-deployment.md)：第28阶段脚本审查和部署决策。
 - [p0_free_data_audit.py](p0_free_data_audit.py)：P0免费数据试采集脚本V1.3。
