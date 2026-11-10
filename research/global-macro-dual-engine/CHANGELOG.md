@@ -3,7 +3,7 @@
 ## 当前版本
 
 - **V1.0统一数据架构与回测数据底座（2026-11-10）：** 新增25号文档，定义六层数据架构、统一实体、四种时间、点时版本、历史股票池、质量状态、实验复现和十项自动化测试。尚未接入生产数据。
-- **研究对话归档0014（2026-11-10）：** 记录第25阶段数据架构设计、数据治理规则和未决数据源风险。
+- **研究对话归档0015（2026-11-10）：** 记录第25阶段数据架构设计、数据治理规则和未决数据源风险。
 
 - **V1.0趋势波段引擎历史回测规格（2026-11-10）：** 新增23号文档，定义行业景气、公司质量、四类入场形态、点时数据、失败样本、退出研究和准入标准。尚未执行历史回测。
 - **研究对话归档0013（2026-11-10）：** 记录第23阶段趋势波段回测规格及第24阶段双引擎组合验证方向。
@@ -41,8 +41,8 @@
 - [conversation-log/0009-v1.0-decision-state-machine.md](conversation-log/0009-v1.0-decision-state-machine.md)：市场、个股、组合三级决策状态机与冲突处理。
 - [conversation-log/0010-v1.0-market-indicator-dictionary.md](conversation-log/0010-v1.0-market-indicator-dictionary.md)：第一批市场环境指标定义、数据治理和重复计分规则。
 - [conversation-log/0011-v1.0-market-regimes.md](conversation-log/0011-v1.0-market-regimes.md)：市场宽度模型、历史验证设计与六类市场状态研究决策。
-- [conversation-log/0012-v1.0-execution-and-backtest-research.md](conversation-log/0012-v1.0-execution-and-backtest-research.md)：第17–22阶段风险预算、动态执行、压力测试和回测验证决策。\n- [conversation-log/0013-v1.0-trend-engine-backtest.md](conversation-log/0013-v1.0-trend-engine-backtest.md)：第23阶段趋势波段历史回测规格与第24阶段研究方向。
-- [conversation-log/0014-v1.0-data-architecture.md](conversation-log/0014-v1.0-data-architecture.md)：第25阶段统一数据架构、点时治理和数据质量测试设计。
+- [conversation-log/0012-v1.0-execution-and-backtest-research.md](conversation-log/0012-v1.0-execution-and-backtest-research.md)：第17–22阶段风险预算、动态执行、压力测试和回测验证决策。\n- [conversation-log/0013-v1.0-trend-engine-backtest.md](conversation-log/0013-v1.0-trend-engine-backtest.md)：第23阶段趋势波段历史回测规格。\n- [conversation-log/0014-v1.0-portfolio-validation.md](conversation-log/0014-v1.0-portfolio-validation.md)：第24阶段双引擎组合验证规格。
+- [conversation-log/0015-v1.0-data-architecture.md](conversation-log/0014-v1.0-data-architecture.md)：第25阶段统一数据架构、点时治理和数据质量测试设计。
 
 ## 后续路线
 
