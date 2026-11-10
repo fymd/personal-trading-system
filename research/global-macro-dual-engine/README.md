@@ -20,11 +20,14 @@
 - [01-system-overview-v1.0.md](01-system-overview-v1.0.md)：交易系统总纲。
 - [02-uncertainty-risk-gate.md](02-uncertainty-risk-gate.md)：不确定性分级与风险否决。
 - [03-market-regime-v1.1.md](03-market-regime-v1.1.md)：市场环境识别与择时规格。
-- [04-sector-strength-rotation-v1.2.md](04-sector-strength-rotation-v1.2.md)：板块强度、主线识别与行业轮动。
-- [05-leader-short-term-engine-v1.3.md](05-leader-short-term-engine-v1.3.md)：龙头短线引擎、候选识别、入场与退出。
+- [04-sector-strength-rotation-v1.2.md](04-sector-strength-rotation-v1.2.md)：板块强度、主线识别与行业轮动基础规格。
+- [05-leader-short-term-engine-v1.3.md](05-leader-short-term-engine-v1.3.md)：龙头短线引擎基础规格。
 - [06-trend-swing-engine-v1.4.md](06-trend-swing-engine-v1.4.md)：趋势波段引擎、行业景气、公司质量、趋势与估值风险。
-- [07-position-sizing-portfolio-risk-v1.5.md](07-position-sizing-portfolio-risk-v1.5.md)：买卖点、仓位规模、组合暴露、流动性、熔断与执行约束。
+- [07-position-sizing-portfolio-risk-v1.5.md](07-position-sizing-portfolio-risk-v1.5.md)：仓位规模、组合暴露、流动性、熔断与执行约束。
 - [08-executable-investment-framework-v1.6.md](08-executable-investment-framework-v1.6.md)：六步决策流程、每日操作清单及双引擎统一执行手册。
+- [09-sentiment-cycle-model-v1.0.md](09-sentiment-cycle-model-v1.0.md)：情绪阶段、六维评分、统计口径、风险闸门与历史验证。
+- [10-mainline-leader-identification-v1.0.md](10-mainline-leader-identification-v1.0.md)：主线确认、龙头身份分类、核心/跟风/补涨及失效规则。
+- [11-entry-signal-model-v1.0.md](11-entry-signal-model-v1.0.md)：双引擎入场形态、假突破、失效条件、风险收益与交易清单。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
 - [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要。
 
@@ -32,7 +35,7 @@
 持续归档重要用户判断、关键决策、逻辑分析、研究规则、公式、伪代码、待验证假设、反例和版本变更。采用结构化摘要，不承诺逐字备份全部聊天。公开仓库不存放账户凭证或个人敏感资料。
 
 ## 开发顺序
-统一数据字典与时间治理 → 市场择时 → 板块轮动 → 龙头短线引擎 → 趋势波段引擎 → 买卖点与组合风险 → 回测基础设施 → 系统整合和样本外验证。
+统一数据字典与时间治理 → 市场择时 → 板块轮动 → 情绪周期 → 主线与龙头识别 → 龙头/趋势入场与退出 → 仓位和组合风险 → 回测基础设施 → 系统整合和样本外验证。
 
 ## 研究纪律
 每项规则记录定义、公式、输入字段、观察周期、信号时间、可用时间、异常处理、参数来源、测试方法和失效条件。保留负面结果和被否定的假设。修改规则必须记录版本、理由和验证结果。
