@@ -29,7 +29,7 @@
 - [09-sentiment-cycle-model-v1.0.md](09-sentiment-cycle-model-v1.0.md)：情绪阶段、六维评分、统计口径、风险闸门与历史验证。
 - [10-mainline-leader-identification-v1.0.md](10-mainline-leader-identification-v1.0.md)：主线确认、龙头身份分类、核心/跟风/补涨及失效规则。
 - [11-entry-signal-model-v1.0.md](11-entry-signal-model-v1.0.md)：双引擎入场形态、假突破、失效条件、风险收益与交易清单。
-- [12-unified-decision-state-machine-v1.0.md](12-unified-decision-state-machine-v1.0.md)：市场、个股、组合三级决策架构，状态转换、冲突处理与每日输出规范。
+- [12-unified-decision-state-machine-v1.0.md](12-unified-decision-state-machine-v1.0.md)：市场、个股、组合三级决策架构，状态转换、冲突处理与每日输出规范。\n- [13-market-environment-indicator-dictionary-v1.0.md](13-market-environment-indicator-dictionary-v1.0.md)：第一批A股市场环境指标定义、数据源分级、时间治理、数据质量、特殊证券处理与重复计分控制。
 - [CHANGELOG.md](CHANGELOG.md)：开发路线与版本记录。
 - [conversation-log/](conversation-log/)：重要对话结论、用户决策、规则讨论和版本演进摘要。
 
