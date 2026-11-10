@@ -1,0 +1,1 @@
+Script source is archived in the current conversation attachment; upload follows from the verified local artifact.
