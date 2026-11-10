@@ -61,3 +61,5 @@
 
 - [27-p0-free-data-sample-audit-v1.0.md](27-p0-free-data-sample-audit-v1.0.md)：P0免费数据同样本试采集设计、字段口径、质量验收与未完成事项。
 - [conversation-log/0017-v1.0-p0-free-data-audit.md](conversation-log/0017-v1.0-p0-free-data-audit.md)：第27阶段试采集准备日志。
+
+- P0采集程序：本地附件 `p0_free_data_audit.py`（V1.1修正，需在可联网Python环境运行）；脚本不含数据文件。
